@@ -1,0 +1,33 @@
+# Node
+node_modules/
+dist/
+.vite/
+coverage/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Env
+.env
+.env.local
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+.venv/
+venv/
+.pytest_cache/
+
+# Backend DB
+backend/app.db
+
+# Logs
+*.log
+
+# Misc
+*.swp
+*.swo
