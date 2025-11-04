@@ -19,7 +19,7 @@
   - `GET /stats` - İstatistikler
   - `GET /health` - Health check
 
-- ✅ **Testler**
+- **Testler**
   - `test_health.py` - Health endpoint testi
   - `test_game_service.py` - Service katmanı testleri (6 test)
   - `test_api.py` - API integration testleri
