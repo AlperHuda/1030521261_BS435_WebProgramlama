@@ -1,28 +1,47 @@
-import { useState } from 'react';
+import { useGame } from './hooks/useGame';
 import { StartScreen } from './components/StartScreen';
 import { GameBoard } from './components/GameBoard';
 import { ResultScreen } from './components/ResultScreen';
+import { ErrorDisplay } from './components/ErrorDisplay';
 
 export default function App() {
-  const [stage, setStage] = useState<'start' | 'play' | 'result'>('start');
-  const [result, setResult] = useState<{ correct: boolean; message: string } | null>(null);
+  const { state, startGame, submitGuess, resetGame, startNewRound } = useGame();
 
-  function handleStart() {
-    setStage('play');
+  if (state.error) {
+    return <ErrorDisplay message={state.error} onRetry={resetGame} />;
   }
 
-  function handleGuess(_index: number) {
-    // Placeholder: always go to result
-    setResult({ correct: false, message: 'İskelet: Sonuç ekranı örneği' });
-    setStage('result');
+  if (state.stage === 'start') {
+    return <StartScreen onStart={() => startGame()} isLoading={state.isLoading} />;
   }
 
-  function handleNewRound() {
-    setStage('start');
-    setResult(null);
+  if (state.stage === 'play') {
+    return (
+      <GameBoard
+        images={state.images}
+        onSelect={submitGuess}
+        hint={state.hint}
+        isLoading={state.isLoading}
+        attemptNumber={state.attemptNumber}
+        selectedIndex={state.selectedIndex}
+      />
+    );
   }
 
-  if (stage === 'start') return <StartScreen onStart={handleStart} />;
-  if (stage === 'play') return <GameBoard images={["/placeholder1.jpg","/placeholder2.jpg","/placeholder3.jpg"]} onSelect={handleGuess} hint={null} />;
-  return <ResultScreen correct={!!result?.correct} message={result?.message ?? ''} onPlayAgain={handleNewRound} />;
+  return (
+    <ResultScreen
+      correct={state.isCorrect ?? false}
+      message={
+        state.isCorrect
+          ? state.attemptNumber === 1
+            ? 'Mükemmel! İlk denemede doğru buldunuz!'
+            : 'Tebrikler! İkinci denemede doğru buldunuz!'
+          : 'Maalesef doğru tahmin yapamadınız.'
+      }
+      onPlayAgain={startNewRound}
+      onBackToMenu={resetGame}
+      aiImageIndex={state.aiImageIndex}
+      attemptNumber={state.attemptNumber}
+    />
+  );
 }
