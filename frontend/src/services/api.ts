@@ -39,6 +39,32 @@ export interface GuessRequest {
   selected_index: number;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string | null;
+  icon: string | null;
+  created_at: string;
+}
+
+export interface GameMode {
+  id: number;
+  name: string;
+  display_name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface CategoryStats {
+  category: string;
+  total_images: number;
+  ai_images: number;
+  real_images: number;
+  total_rounds_played: number;
+}
+
 class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -82,5 +108,19 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/health`);
     return handleResponse<{ status: string }>(response);
   },
-};
 
+  async listCategories(): Promise<Category[]> {
+    const response = await fetch(`${API_BASE_URL}/categories`);
+    return handleResponse<Category[]>(response);
+  },
+
+  async getCategoryStats(categoryName: string): Promise<CategoryStats> {
+    const response = await fetch(`${API_BASE_URL}/categories/${categoryName}/stats`);
+    return handleResponse<CategoryStats>(response);
+  },
+
+  async listGameModes(): Promise<GameMode[]> {
+    const response = await fetch(`${API_BASE_URL}/categories/modes`);
+    return handleResponse<GameMode[]>(response);
+  },
+};

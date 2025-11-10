@@ -1,7 +1,8 @@
-export type GameStage = 'start' | 'play' | 'result';
+export type GameStage = 'menu' | 'mode-select' | 'category-select' | 'play' | 'result';
 
 export interface GameState {
   stage: GameStage;
+  gameMode: string | null;
   roundId: number | null;
   images: Array<{ id: number; url: string }>;
   selectedIndex: number | null;
@@ -16,7 +17,8 @@ export interface GameState {
 }
 
 export const initialGameState: GameState = {
-  stage: 'start',
+  stage: 'menu',
+  gameMode: null,
   roundId: null,
   images: [],
   selectedIndex: null,
@@ -29,4 +31,3 @@ export const initialGameState: GameState = {
   isLoading: false,
   error: null,
 };
-

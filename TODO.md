@@ -10,47 +10,52 @@
 
 ---
 
-## Hafta 1: Temel Oyun Mekanikleri ve Backend Entegrasyonu
+## Hafta 1: Temel Oyun Mekanikleri ve Backend Entegrasyonu - TAMAMLANDI
 ### Backend
-- [ ] GameRound ve Guess modellerini tamamla
-- [ ] Görsel veri yapısını tanımla (Image model/schema)
-- [ ] `/rounds` endpoint'ini implement et (yeni tur oluştur)
-- [ ] `/rounds/{id}/guess` endpoint'ini implement et (tahmin değerlendir)
-- [ ] İpucu sistemi backend logic
-- [ ] Backend testlerini genişlet (CRUD operations)
+- [x] GameRound ve Guess modellerini tamamla
+- [x] Görsel veri yapısını tanımla (Image model/schema)
+- [x] `/rounds` endpoint'ini implement et (yeni tur oluştur)
+- [x] `/rounds/{id}/guess` endpoint'ini implement et (tahmin değerlendir)
+- [x] İpucu sistemi backend logic
+- [x] Backend testlerini genişlet (CRUD operations)
 
 ### Frontend
-- [ ] API servisi oluştur (axios/fetch wrapper)
-- [ ] Backend ile entegrasyon
-- [ ] Oyun state management (useState/useContext)
-- [ ] İlk tahmin ve ikinci şans mekanikleri
-- [ ] İpucu gösterimi
-- [ ] Loading states ve error handling
+- [x] API servisi oluştur (axios/fetch wrapper)
+- [x] Backend ile entegrasyon
+- [x] Oyun state management (useState/useContext)
+- [x] İlk tahmin ve ikinci şans mekanikleri
+- [x] İpucu gösterimi
+- [x] Loading states ve error handling
 
 ### Test
-- [ ] API integration testleri
-- [ ] Component testlerini genişlet
-- [ ] E2E test setup (opsiyonel)
+- [x] API integration testleri
+- [x] Component testlerini genişlet
+- [x] E2E test setup (opsiyonel)
 
 ---
 
-## Hafta 2: Oyun Modu #1 - Klasik Mod
+## Hafta 2: Oyun Modu #1 - Klasik Mod - TAMAMLANDI
 ### Backend
-- [ ] Kategori sistemi (Portre, Manzara, Sanat, vb.)
-- [ ] Görsel veritabanı yapısı
-- [ ] Kategori bazlı round oluşturma
-- [ ] `/categories` endpoint
+- [x] Kategori sistemi (Portre, Manzara, Sanat, vb.)
+- [x] Görsel veritabanı yapısı
+- [x] Kategori bazlı round oluşturma
+- [x] `/categories` endpoint
+- [x] `/categories/modes` endpoint
+- [x] CORS middleware
 
 ### Frontend
-- [ ] Mod seçim ekranı componenti
-- [ ] Klasik mod UI/UX
-- [ ] Kategori seçimi
-- [ ] Görsel grid layout iyileştirmeleri
-- [ ] Responsive tasarım
+- [x] Mod seçim ekranı componenti
+- [x] Klasik mod UI/UX
+- [x] Kategori seçimi
+- [x] Görsel grid layout iyileştirmeleri
+- [x] Responsive tasarım
+- [x] Ana menü ekranı
+- [x] İstatistik ekranı
 
 ### Test
-- [ ] Kategori testleri
-- [ ] Mod seçim testleri
+- [x] Kategori testleri
+- [x] Mod seçim testleri
+- [x] Backend kategori endpoint testleri
 
 ---
 
