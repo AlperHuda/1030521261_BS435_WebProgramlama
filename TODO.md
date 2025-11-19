@@ -59,24 +59,30 @@
 
 ---
 
-## Hafta 3: Oyun Modu #2 - Zamana Karşı Mod
+## Hafta 3: Oyun Modu #2 - Zamana Karşı Mod - TAMAMLANDI
 ### Backend
-- [ ] Timer mekanizması için timestamp tracking
-- [ ] Zaman bazlı skorlama sistemi
-- [ ] Leaderboard modeli (User, Score, Timestamp)
-- [ ] `/leaderboard` endpoint
+- [x] Timer mekanizması için timestamp tracking
+- [x] Zaman bazlı skorlama sistemi
+- [x] Leaderboard modeli (User, Score, Timestamp)
+- [x] `/leaderboard` endpoint (POST, GET, GET /top/{mode}, GET /player/{name})
+- [x] GameRound modelinde game_mode, start_time, end_time, time_limit
+- [x] Leaderboard ranking sistemi
 
 ### Frontend
-- [ ] Timer componenti
-- [ ] Zamana karşı mod UI
-- [ ] Countdown animasyonları
-- [ ] Zaman dolunca otomatik sonuç ekranı
-- [ ] Skor hesaplama ve gösterim
+- [x] Timer componenti (countdown, progress bar, color changes)
+- [x] Zamana karşı mod UI
+- [x] Countdown animasyonları
+- [x] Zaman dolunca otomatik sonuç ekranı
+- [x] Skor hesaplama ve gösterim
+- [x] PlayerNameModal componenti
+- [x] LeaderboardScreen componenti
+- [x] Sıralama tablosu gösterimi
 
 ### Test
-- [ ] Timer testleri
-- [ ] Skor hesaplama testleri
-- [ ] Leaderboard testleri
+- [x] Timer testleri (4 test)
+- [x] Skor hesaplama testleri
+- [x] Leaderboard testleri (4 backend test)
+- [x] LeaderboardScreen testleri (3 frontend test)
 
 ---
 

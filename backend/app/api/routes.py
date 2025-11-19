@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 from ..core.database import get_db
 from ..schemas.game import (
@@ -21,7 +22,16 @@ def health() -> dict:
 def start_round(request: RoundCreateRequest, db: Session = Depends(get_db)):
     """Create a new game round with 3 images (2 real + 1 AI)"""
     try:
-        round_obj = create_round(db, category=request.category, difficulty=request.difficulty)
+        game_mode = request.game_mode if hasattr(request, 'game_mode') else 'classic'
+        time_limit = request.time_limit if hasattr(request, 'time_limit') else None
+        
+        round_obj = create_round(
+            db,
+            category=request.category,
+            difficulty=request.difficulty,
+            game_mode=game_mode,
+            time_limit=time_limit
+        )
         
         # Prepare response without revealing AI image
         images = [
@@ -34,7 +44,10 @@ def start_round(request: RoundCreateRequest, db: Session = Depends(get_db)):
             round_id=round_obj.id,
             images=images,
             category=round_obj.category,
-            difficulty=round_obj.difficulty
+            difficulty=round_obj.difficulty,
+            game_mode=round_obj.game_mode,
+            time_limit=round_obj.time_limit,
+            start_time=round_obj.start_time
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

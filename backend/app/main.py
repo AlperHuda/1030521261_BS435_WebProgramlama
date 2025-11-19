@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import router
 from .api.categories import router as categories_router
+from .api.leaderboard import router as leaderboard_router
 from .core.config import settings
 from .core.database import Base, engine
 
@@ -22,6 +23,7 @@ def create_app() -> FastAPI:
     
     app.include_router(router)
     app.include_router(categories_router)
+    app.include_router(leaderboard_router)
     return app
 
 

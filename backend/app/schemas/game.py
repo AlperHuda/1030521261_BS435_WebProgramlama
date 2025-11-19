@@ -31,6 +31,8 @@ class ImagePublic(BaseModel):
 class RoundCreateRequest(BaseModel):
     category: Optional[str] = None
     difficulty: Optional[str] = Field(default="medium", pattern="^(easy|medium|hard)$")
+    game_mode: Optional[str] = Field(default="classic", pattern="^(classic|timed)$")
+    time_limit: Optional[int] = Field(default=30, ge=10, le=120)
 
 
 class RoundResponse(BaseModel):
@@ -38,6 +40,9 @@ class RoundResponse(BaseModel):
     images: List[ImagePublic]
     category: Optional[str] = None
     difficulty: str
+    game_mode: Optional[str] = "classic"
+    time_limit: Optional[int] = None
+    start_time: Optional[datetime] = None
 
     class Config:
         from_attributes = True

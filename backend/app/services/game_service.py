@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional, Tuple
+from datetime import datetime
 import random
 
 from ..models.game import GameRound, Guess, Image
@@ -28,7 +29,13 @@ def get_random_images(db: Session, category: Optional[str] = None, count: int = 
     return real_images + ai_images
 
 
-def create_round(db: Session, category: Optional[str] = None, difficulty: str = "medium") -> GameRound:
+def create_round(
+    db: Session,
+    category: Optional[str] = None,
+    difficulty: str = "medium",
+    game_mode: str = "classic",
+    time_limit: Optional[int] = None
+) -> GameRound:
     """Create a new game round with 3 random images"""
     images = get_random_images(db, category, count=3)
     
@@ -38,6 +45,9 @@ def create_round(db: Session, category: Optional[str] = None, difficulty: str = 
     # Find AI image index
     ai_index = next(i for i, img in enumerate(images) if img.is_ai_generated)
     
+    # Set start time for timed mode
+    start_time = datetime.utcnow() if game_mode == "timed" else None
+    
     round_obj = GameRound(
         ai_image_index=ai_index,
         image1_id=images[0].id,
@@ -45,6 +55,9 @@ def create_round(db: Session, category: Optional[str] = None, difficulty: str = 
         image3_id=images[2].id,
         category=category,
         difficulty=difficulty,
+        game_mode=game_mode,
+        time_limit=time_limit if game_mode == "timed" else None,
+        start_time=start_time,
         completed=False
     )
     

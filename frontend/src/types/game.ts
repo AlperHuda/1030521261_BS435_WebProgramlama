@@ -14,6 +14,10 @@ export interface GameState {
   difficulty: string;
   isLoading: boolean;
   error: string | null;
+  timeLimit: number | null;
+  startTime: Date | null;
+  timeTaken: number | null;
+  score: number;
 }
 
 export const initialGameState: GameState = {
@@ -30,4 +34,8 @@ export const initialGameState: GameState = {
   difficulty: 'medium',
   isLoading: false,
   error: null,
+  timeLimit: null,
+  startTime: null,
+  timeTaken: null,
+  score: 0,
 };

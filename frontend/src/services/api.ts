@@ -10,6 +10,9 @@ export interface RoundResponse {
   images: ImagePublic[];
   category: string | null;
   difficulty: string;
+  game_mode?: string;
+  time_limit?: number | null;
+  start_time?: string | null;
 }
 
 export interface GuessResponse {
@@ -33,6 +36,8 @@ export interface StatsResponse {
 export interface RoundCreateRequest {
   category?: string | null;
   difficulty?: 'easy' | 'medium' | 'hard';
+  game_mode?: 'classic' | 'timed';
+  time_limit?: number;
 }
 
 export interface GuessRequest {
@@ -123,4 +128,51 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/categories/modes`);
     return handleResponse<GameMode[]>(response);
   },
+
+  // Leaderboard
+  async createLeaderboardEntry(entry: {
+    player_name: string;
+    score: number;
+    time_taken: number;
+    game_mode: string;
+    category?: string | null;
+    round_id?: number | null;
+  }): Promise<LeaderboardEntry> {
+    const response = await fetch(`${API_BASE_URL}/leaderboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+    return handleResponse<LeaderboardEntry>(response);
+  },
+
+  async getLeaderboard(params?: {
+    game_mode?: string;
+    category?: string;
+    limit?: number;
+  }): Promise<LeaderboardEntry[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.game_mode) searchParams.set('game_mode', params.game_mode);
+    if (params?.category) searchParams.set('category', params.category);
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    
+    const response = await fetch(`${API_BASE_URL}/leaderboard?${searchParams}`);
+    return handleResponse<LeaderboardEntry[]>(response);
+  },
+
+  async getTopByMode(gameMode: string, limit: number = 10): Promise<LeaderboardEntry[]> {
+    const response = await fetch(`${API_BASE_URL}/leaderboard/top/${gameMode}?limit=${limit}`);
+    return handleResponse<LeaderboardEntry[]>(response);
+  },
 };
+
+export interface LeaderboardEntry {
+  id: number;
+  player_name: string;
+  score: number;
+  time_taken: number;
+  game_mode: string;
+  category: string | null;
+  created_at: string;
+  rank?: number;
+}

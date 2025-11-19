@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey, String, Boolean
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, String, Boolean, Float
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
@@ -27,7 +27,11 @@ class GameRound(Base):
     image3_id = Column(Integer, ForeignKey("images.id"), nullable=False)
     category = Column(String(50), nullable=True)
     difficulty = Column(String(20), default="medium")  # easy, medium, hard
+    game_mode = Column(String(50), default="classic")  # classic, timed
     completed = Column(Boolean, default=False)
+    start_time = Column(DateTime(timezone=True), nullable=True)
+    end_time = Column(DateTime(timezone=True), nullable=True)
+    time_limit = Column(Integer, nullable=True)  # seconds, for timed mode
 
     image1 = relationship("Image", foreign_keys=[image1_id])
     image2 = relationship("Image", foreign_keys=[image2_id])
