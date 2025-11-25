@@ -164,6 +164,52 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/leaderboard/top/${gameMode}?limit=${limit}`);
     return handleResponse<LeaderboardEntry[]>(response);
   },
+
+  // Authentication
+  async register(data: RegisterData): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse<AuthResponse>(response);
+  },
+
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+    });
+    return handleResponse<AuthResponse>(response);
+  },
+
+  async getMe(token: string): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<User>(response);
+  },
+
+  async getUserStats(token: string): Promise<UserStats> {
+    const response = await fetch(`${API_BASE_URL}/auth/stats`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<UserStats>(response);
+  },
+
+  async updateUserStats(token: string, won: boolean, score: number, timeTaken?: number): Promise<void> {
+    const params = new URLSearchParams();
+    params.set('won', won.toString());
+    params.set('score', score.toString());
+    if (timeTaken !== undefined) params.set('time_taken', timeTaken.toString());
+
+    const response = await fetch(`${API_BASE_URL}/auth/stats/update?${params}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    await handleResponse<void>(response);
+  },
 };
 
 export interface LeaderboardEntry {
@@ -175,4 +221,46 @@ export interface LeaderboardEntry {
   category: string | null;
   created_at: string;
   rank?: number;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string | null;
+  display_name: string | null;
+  total_games: number;
+  games_won: number;
+  games_lost: number;
+  total_score: number;
+  best_time: number | null;
+  created_at: string;
+  last_login: string | null;
+}
+
+export interface UserStats {
+  total_games: number;
+  games_won: number;
+  games_lost: number;
+  win_rate: number;
+  total_score: number;
+  best_time: number | null;
+  average_score: number;
+}
+
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+export interface RegisterData {
+  username: string;
+  password: string;
+  email?: string;
+  display_name?: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
 }

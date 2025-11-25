@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGame } from './hooks/useGame';
+import { useAuth } from './context/AuthContext';
 import { MenuScreen } from './components/MenuScreen';
 import { ModeSelectScreen } from './components/ModeSelectScreen';
 import { CategorySelectScreen } from './components/CategorySelectScreen';
@@ -7,6 +8,9 @@ import { GameBoard } from './components/GameBoard';
 import { ResultScreen } from './components/ResultScreen';
 import { StatsScreen } from './components/StatsScreen';
 import { LeaderboardScreen } from './components/LeaderboardScreen';
+import { LoginScreen } from './components/LoginScreen';
+import { RegisterScreen } from './components/RegisterScreen';
+import { ProfileScreen } from './components/ProfileScreen';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { Timer } from './components/Timer';
 import { PlayerNameModal } from './components/PlayerNameModal';
@@ -14,9 +18,25 @@ import { api } from './services/api';
 
 export default function App() {
   const { state, goToMenu, goToModeSelect, selectMode, selectCategoryAndStart, submitGuess, resetGame, startNewRound, handleTimeUp } = useGame();
+  const { user, token, login, register, isAuthenticated, isLoading: authLoading } = useAuth();
   const [showStats, setShowStats] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showNameModal, setShowNameModal] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+
+  // Update user stats after game ends
+  useEffect(() => {
+    if (state.stage === 'result' && isAuthenticated && token && state.isCorrect !== null) {
+      api.updateUserStats(
+        token,
+        state.isCorrect,
+        state.isCorrect ? 1 : 0,
+        state.timeTaken || undefined
+      ).catch(err => console.error('Failed to update stats:', err));
+    }
+  }, [state.stage, state.isCorrect, isAuthenticated, token, state.timeTaken]);
 
   async function handleSaveScore(playerName: string) {
     if (state.gameMode === 'timed' && state.timeTaken !== null) {
@@ -51,6 +71,16 @@ export default function App() {
     return <ErrorDisplay message={state.error} onRetry={resetGame} />;
   }
 
+  if (authLoading) {
+    return (
+      <div className="center">
+        <div className="container" style={{ textAlign: 'center' }}>
+          <p>Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (showStats) {
     return <StatsScreen onBack={() => setShowStats(false)} />;
   }
@@ -59,11 +89,51 @@ export default function App() {
     return <LeaderboardScreen onBack={() => { setShowLeaderboard(false); goToMenu(); }} gameMode={state.gameMode || 'timed'} />;
   }
 
+  if (showLogin) {
+    return (
+      <LoginScreen
+        onLogin={async (username, password) => {
+          await login(username, password);
+          setShowLogin(false);
+        }}
+        onSwitchToRegister={() => {
+          setShowLogin(false);
+          setShowRegister(true);
+        }}
+        onBack={() => setShowLogin(false)}
+      />
+    );
+  }
+
+  if (showRegister) {
+    return (
+      <RegisterScreen
+        onRegister={async (username, password, email, displayName) => {
+          await register(username, password, email, displayName);
+          setShowRegister(false);
+        }}
+        onSwitchToLogin={() => {
+          setShowRegister(false);
+          setShowLogin(true);
+        }}
+        onBack={() => setShowRegister(false)}
+      />
+    );
+  }
+
+  if (showProfile) {
+    return <ProfileScreen onBack={() => setShowProfile(false)} />;
+  }
+
   if (state.stage === 'menu') {
     return (
       <MenuScreen
         onStartGame={goToModeSelect}
         onViewStats={() => setShowStats(true)}
+        onLogin={() => setShowLogin(true)}
+        onProfile={() => setShowProfile(true)}
+        isAuthenticated={isAuthenticated}
+        username={user?.display_name || user?.username}
       />
     );
   }

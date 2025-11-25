@@ -86,25 +86,29 @@
 
 ---
 
-## Hafta 4: Kullanıcı Sistemi ve İstatistikler
+## Hafta 4: Kullanıcı Sistemi ve İstatistikler - TAMAMLANDI
 ### Backend
-- [ ] User modeli (kullanıcı adı, istatistikler)
-- [ ] Session/Authentication (basit token sistemi)
-- [ ] `/auth/register` ve `/auth/login` endpoints
-- [ ] Kullanıcı bazlı istatistikler
-- [ ] `/users/{id}/stats` endpoint
+- [x] User modeli (kullanıcı adı, istatistikler)
+- [x] Session/Authentication (JWT token sistemi)
+- [x] `/auth/register` ve `/auth/login` endpoints
+- [x] Kullanıcı bazlı istatistikler
+- [x] `/auth/me`, `/auth/stats`, `/auth/stats/update` endpoints
+- [x] Password hashing (bcrypt)
+- [x] JWT token creation/validation
 
 ### Frontend
-- [ ] Login/Register formları
-- [ ] User context/provider
-- [ ] Profil sayfası
-- [ ] İstatistik dashboard (doğruluk oranı, toplam oyun, vb.)
-- [ ] LocalStorage ile session yönetimi
+- [x] Login/Register formları
+- [x] AuthContext/AuthProvider
+- [x] Profil sayfası
+- [x] İstatistik dashboard (win rate, best time, average score)
+- [x] LocalStorage ile session yönetimi
+- [x] MenuScreen'de user bilgisi gösterimi
+- [x] Otomatik stats güncelleme (oyun sonrası)
 
 ### Test
-- [ ] Authentication testleri
-- [ ] User stats testleri
-- [ ] Form validation testleri
+- [x] Authentication testleri (8 backend test)
+- [x] User stats testleri
+- [x] Form validation testleri (2 frontend test)
 
 ---
 
