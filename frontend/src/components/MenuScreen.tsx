@@ -1,26 +1,27 @@
 type MenuScreenProps = {
   onStartGame: () => void;
   onViewStats: () => void;
+  onViewAchievements?: () => void;
   onLogin?: () => void;
   onProfile?: () => void;
   isAuthenticated?: boolean;
   username?: string;
 };
 
-export function MenuScreen({ onStartGame, onViewStats, onLogin, onProfile, isAuthenticated, username }: MenuScreenProps) {
+export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onLogin, onProfile, isAuthenticated, username }: MenuScreenProps) {
   return (
     <div className="center">
       <div className="container" style={{ textAlign: 'center', maxWidth: '600px' }}>
         <h1 className="title" style={{ fontSize: '36px', marginBottom: '16px' }}>
           AI Görsel Tahmin Oyunu
         </h1>
-        
+
         {isAuthenticated && username && (
           <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '24px' }}>
             Hoş geldin, {username}!
           </p>
         )}
-        
+
         <div className="text" style={{ marginBottom: '32px', lineHeight: '1.6' }}>
           <p>Yapay zeka ile gerçeği ayırt etme becerilerinizi test edin!</p>
         </div>
@@ -33,7 +34,7 @@ export function MenuScreen({ onStartGame, onViewStats, onLogin, onProfile, isAut
           >
             Oyuna Başla
           </button>
-          
+
           <button
             className="button"
             onClick={onViewStats}
@@ -41,7 +42,17 @@ export function MenuScreen({ onStartGame, onViewStats, onLogin, onProfile, isAut
           >
             İstatistikler
           </button>
-          
+
+          {isAuthenticated && onViewAchievements && (
+            <button
+              className="button"
+              onClick={onViewAchievements}
+              style={{ fontSize: '16px', padding: '12px 24px', background: '#eab308' }}
+            >
+              Rozetlerim
+            </button>
+          )}
+
           {isAuthenticated && onProfile && (
             <button
               className="button"
@@ -51,7 +62,7 @@ export function MenuScreen({ onStartGame, onViewStats, onLogin, onProfile, isAut
               Profilim
             </button>
           )}
-          
+
           {!isAuthenticated && onLogin && (
             <button
               className="button"
@@ -64,7 +75,7 @@ export function MenuScreen({ onStartGame, onViewStats, onLogin, onProfile, isAut
         </div>
 
         <div style={{ marginTop: '48px', fontSize: '14px', color: '#6b7280' }}>
-          <p>Hafta 4: Kullanıcı Sistemi + Profil</p>
+          <p>Hafta 5: Başarı Rozetleri ve Gamification</p>
         </div>
       </div>
     </div>

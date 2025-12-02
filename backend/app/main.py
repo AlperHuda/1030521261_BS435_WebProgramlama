@@ -5,6 +5,7 @@ from .api.routes import router
 from .api.categories import router as categories_router
 from .api.leaderboard import router as leaderboard_router
 from .api.auth import router as auth_router
+from .api.achievements import router as achievements_router
 from .core.config import settings
 from .core.database import Base, engine
 
@@ -26,6 +27,7 @@ def create_app() -> FastAPI:
     app.include_router(categories_router)
     app.include_router(leaderboard_router)
     app.include_router(auth_router)
+    app.include_router(achievements_router, prefix="/achievements", tags=["achievements"])
     return app
 
 

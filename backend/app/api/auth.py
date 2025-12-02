@@ -168,6 +168,13 @@ def update_user_stats(
             current_user.best_time = time_taken
     
     db.commit()
+
+    # Check for new achievements
+    from ..services.achievement_service import AchievementService
+    new_achievements = AchievementService.check_achievements(db, current_user.id)
     
-    return {"message": "Statistics updated successfully"}
+    return {
+        "message": "Statistics updated successfully",
+        "new_achievements": new_achievements
+    }
 

@@ -14,6 +14,8 @@ import { ProfileScreen } from './components/ProfileScreen';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { Timer } from './components/Timer';
 import { PlayerNameModal } from './components/PlayerNameModal';
+import { AchievementList } from './components/AchievementList';
+import { AchievementNotification } from './components/AchievementNotification';
 import { api } from './services/api';
 
 export default function App() {
@@ -21,20 +23,27 @@ export default function App() {
   const { user, token, login, register, isAuthenticated, isLoading: authLoading } = useAuth();
   const [showStats, setShowStats] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
   const [showNameModal, setShowNameModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
 
   // Update user stats after game ends
   useEffect(() => {
     if (state.stage === 'result' && isAuthenticated && token && state.isCorrect !== null) {
+      // Update stats and check for new achievements
       api.updateUserStats(
         token,
         state.isCorrect,
         state.isCorrect ? 1 : 0,
         state.timeTaken || undefined
-      ).catch(err => console.error('Failed to update stats:', err));
+      ).then((earned) => {
+        if (earned && earned.length > 0) {
+          setNewAchievements(earned);
+        }
+      }).catch(err => console.error('Failed to update stats:', err));
     }
   }, [state.stage, state.isCorrect, isAuthenticated, token, state.timeTaken]);
 
@@ -89,6 +98,10 @@ export default function App() {
     return <LeaderboardScreen onBack={() => { setShowLeaderboard(false); goToMenu(); }} gameMode={state.gameMode || 'timed'} />;
   }
 
+  if (showAchievements) {
+    return <AchievementList onBack={() => setShowAchievements(false)} />;
+  }
+
   if (showLogin) {
     return (
       <LoginScreen
@@ -130,6 +143,7 @@ export default function App() {
       <MenuScreen
         onStartGame={goToModeSelect}
         onViewStats={() => setShowStats(true)}
+        onViewAchievements={() => setShowAchievements(true)}
         onLogin={() => setShowLogin(true)}
         onProfile={() => setShowProfile(true)}
         isAuthenticated={isAuthenticated}
@@ -182,6 +196,10 @@ export default function App() {
 
   return (
     <>
+      <AchievementNotification
+        achievements={newAchievements}
+        onClose={() => setNewAchievements([])}
+      />
       <ResultScreen
         correct={state.isCorrect ?? false}
         message={
@@ -190,8 +208,8 @@ export default function App() {
               ? 'Mükemmel! İlk denemede doğru buldunuz!'
               : 'Tebrikler! İkinci denemede doğru buldunuz!'
             : state.gameMode === 'timed' && state.timeTaken === state.timeLimit
-            ? 'Süre doldu! Maalesef doğru tahmin yapamadınız.'
-            : 'Maalesef doğru tahmin yapamadınız.'
+              ? 'Süre doldu! Maalesef doğru tahmin yapamadınız.'
+              : 'Maalesef doğru tahmin yapamadınız.'
         }
         onPlayAgain={() => handleResultAction('play-again')}
         onBackToMenu={() => handleResultAction('menu')}

@@ -85,7 +85,32 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
+export interface Achievement {
+  id: number;
+  name: string;
+  description: string;
+  icon_name: string;
+  category: string;
+  condition_type: string;
+  condition_value: number;
+}
+
+export interface UserAchievement {
+  user_id: number;
+  achievement_id: number;
+  earned_at: string;
+  achievement: Achievement;
+}
+
 export const api = {
+  // ... existing methods ...
+
   async createRound(request: RoundCreateRequest = {}): Promise<RoundResponse> {
     const response = await fetch(`${API_BASE_URL}/rounds`, {
       method: 'POST',
@@ -155,7 +180,7 @@ export const api = {
     if (params?.game_mode) searchParams.set('game_mode', params.game_mode);
     if (params?.category) searchParams.set('category', params.category);
     if (params?.limit) searchParams.set('limit', params.limit.toString());
-    
+
     const response = await fetch(`${API_BASE_URL}/leaderboard?${searchParams}`);
     return handleResponse<LeaderboardEntry[]>(response);
   },
@@ -198,7 +223,7 @@ export const api = {
     return handleResponse<UserStats>(response);
   },
 
-  async updateUserStats(token: string, won: boolean, score: number, timeTaken?: number): Promise<void> {
+  async updateUserStats(token: string, won: boolean, score: number, timeTaken?: number): Promise<string[]> {
     const params = new URLSearchParams();
     params.set('won', won.toString());
     params.set('score', score.toString());
@@ -208,8 +233,25 @@ export const api = {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` },
     });
-    await handleResponse<void>(response);
+    const data = await handleResponse<{ message: string, new_achievements: string[] }>(response);
+    return data.new_achievements;
   },
+
+  // Achievements
+  async getMyAchievements(token: string): Promise<UserAchievement[]> {
+    const response = await fetch(`${API_BASE_URL}/achievements/my-achievements`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<UserAchievement[]>(response);
+  },
+
+  async initializeAchievements(token: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/achievements/initialize`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    await handleResponse<void>(response);
+  }
 };
 
 export interface LeaderboardEntry {

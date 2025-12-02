@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from ..core.database import Base
@@ -20,6 +21,10 @@ class User(Base):
     total_score = Column(Integer, default=0, nullable=False)
     best_time = Column(Float, nullable=True)
     
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_login = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    achievements = relationship("UserAchievement", back_populates="user")
 

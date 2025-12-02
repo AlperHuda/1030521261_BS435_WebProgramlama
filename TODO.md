@@ -114,17 +114,17 @@
 
 ## Hafta 5: Başarı Rozetleri ve Gamification
 ### Backend
-- [ ] Achievement modeli
-- [ ] Rozet kazanma logic
-- [ ] `/users/{id}/achievements` endpoint
-- [ ] Rozet kategorileri (İlk oyun, 10 doğru tahmin, vb.)
+- [x] Achievement modeli
+- [x] Rozet kazanma logic
+- [x] `/users/{id}/achievements` endpoint
+- [x] Rozet kategorileri (İlk oyun, 10 doğru tahmin, vb.)
 
 ### Frontend
-- [ ] Achievement/Badge componenti
-- [ ] Rozet galeri sayfası
-- [ ] Rozet kazanma animasyonu/modal
-- [ ] Progress bar componentleri
-- [ ] Bildirim sistemi
+- [x] Achievement/Badge componenti
+- [x] Rozet galeri sayfası
+- [x] Rozet kazanma animasyonu/modal
+- [x] Progress bar componentleri
+- [x] Bildirim sistemi
 
 ### Test
 - [ ] Achievement logic testleri
