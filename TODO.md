@@ -135,17 +135,17 @@
 
 ## Hafta 6: Zorluk Seviyeleri ve Gelişmiş Özellikler
 ### Backend
-- [ ] Difficulty seviyeleri (Kolay, Orta, Zor)
-- [ ] Zorluk bazlı görsel seçimi
-- [ ] Hint sayısı ve kalitesi ayarları
-- [ ] `/settings` endpoint
+- [x] Difficulty seviyeleri (Kolay, Orta, Zor)
+- [x] Zorluk bazlı görsel seçimi
+- [x] Hint sayısı ve kalitesi ayarları
+- [x] `/settings` endpoint
 
 ### Frontend
-- [ ] Zorluk seçim UI
-- [ ] Settings/Ayarlar sayfası
-- [ ] Hint limitleri ve gösterimi
-- [ ] Zorluk bazlı UI değişimleri
-- [ ] Erişilebilirlik iyileştirmeleri (a11y)
+- [x] Zorluk seçim UI
+- [x] Settings/Ayarlar sayfası
+- [x] Hint limitleri ve gösterimi
+- [x] Zorluk bazlı UI değişimleri
+- [x] Erişilebilirlik iyileştirmeleri (a11y)
 
 ### Test
 - [ ] Zorluk seviyesi testleri

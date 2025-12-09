@@ -25,8 +25,14 @@ class UserResponse(UserBase):
     games_lost: int
     total_score: int
     best_time: Optional[float]
+    preferred_difficulty: str
+    is_sound_enabled: bool
     created_at: datetime
     last_login: Optional[datetime]
+
+class UserSettingsUpdate(BaseModel):
+    preferred_difficulty: Optional[str] = None
+    is_sound_enabled: Optional[bool] = None
 
     class Config:
         from_attributes = True

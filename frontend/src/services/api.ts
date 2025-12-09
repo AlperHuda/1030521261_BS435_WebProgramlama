@@ -237,6 +237,18 @@ export const api = {
     return data.new_achievements;
   },
 
+  async updateSettings(token: string, settings: { preferred_difficulty?: string, is_sound_enabled?: boolean }): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/auth/settings`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(settings)
+    });
+    return handleResponse<User>(response);
+  },
+
   // Achievements
   async getMyAchievements(token: string): Promise<UserAchievement[]> {
     const response = await fetch(`${API_BASE_URL}/achievements/my-achievements`, {
@@ -275,9 +287,12 @@ export interface User {
   games_lost: number;
   total_score: number;
   best_time: number | null;
+  preferred_difficulty: string;
+  is_sound_enabled: boolean;
   created_at: string;
   last_login: string | null;
 }
+
 
 export interface UserStats {
   total_games: number;

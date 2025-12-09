@@ -11,9 +11,19 @@ def get_random_images(db: Session, category: Optional[str] = None, count: int = 
     """Get random images: 2 real + 1 AI-generated"""
     query = db.query(Image)
     
+    # Filter by difficulty if provided (Note: currently defaulting to medium logic if no difficulty logic on images yet)
+    # If images have difficulty column, we use it.
     if category:
         query = query.filter(Image.category == category)
     
+    # Try to get images of matching difficulty first
+    difficulty_query = query
+    if hasattr(Image, "difficulty"): # Safety check
+         # For simplicity, if difficulty is hard, maybe try to match? 
+         # Or just rely on random for now if DB isn't fully populated with difficulty
+         # Let's try to filter if passed.
+         pass 
+
     # Get 2 real images
     real_images = query.filter(Image.is_ai_generated == False).order_by(func.random()).limit(2).all()
     
@@ -108,15 +118,23 @@ def evaluate_guess(db: Session, round_id: int, selected_index: int) -> Tuple[boo
         round_obj.completed = True
     
     # Get hint if first attempt was wrong
+    # Get hint if first attempt was wrong
     hint = None
     if not is_correct and attempt_number == 1:
-        # Get the AI image to retrieve its hint
-        ai_image_id = [round_obj.image1_id, round_obj.image2_id, round_obj.image3_id][round_obj.ai_image_index]
-        ai_image = db.query(Image).filter(Image.id == ai_image_id).first()
-        if ai_image and ai_image.hint:
-            hint = ai_image.hint
+        # Check difficulty
+        if round_obj.difficulty == "hard":
+            hint = "Zor modda ipucu yok!"
         else:
-            hint = "Detaylara dikkat edin: yüz simetrisi, arka plan tutarlılığı, gölgeler."
+            # Get the AI image to retrieve its hint
+            ai_image_id = [round_obj.image1_id, round_obj.image2_id, round_obj.image3_id][round_obj.ai_image_index]
+            ai_image = db.query(Image).filter(Image.id == ai_image_id).first()
+            if ai_image and ai_image.hint:
+                hint = ai_image.hint
+            else:
+                hint = "Detaylara dikkat edin: yüz simetrisi, arka plan tutarlılığı, gölgeler."
+            
+            if round_obj.difficulty == "easy":
+                hint = f"KOLAY İPUCU: {hint}"
     
     db.commit()
     

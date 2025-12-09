@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string, email?: string, displayName?: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -22,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Load user from localStorage
     const storedToken = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
-    
+
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
@@ -32,10 +33,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(username: string, password: string) {
     const response: AuthResponse = await api.login({ username, password });
-    
+
     setToken(response.access_token);
     setUser(response.user);
-    
+
     localStorage.setItem('token', response.access_token);
     localStorage.setItem('user', JSON.stringify(response.user));
   }
@@ -47,12 +48,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       display_name: displayName,
     });
-    
+
     setToken(response.access_token);
     setUser(response.user);
-    
+
     localStorage.setItem('token', response.access_token);
     localStorage.setItem('user', JSON.stringify(response.user));
+  }
+
+  async function refreshUser() {
+    if (!token) return;
+    try {
+      const user = await api.getMe(token);
+      setUser(user);
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch (e) {
+      console.error("Failed to refresh user", e);
+    }
   }
 
   function logout() {
@@ -70,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        refreshUser,
         isAuthenticated: !!user,
         isLoading,
       }}
@@ -86,4 +99,3 @@ export function useAuth() {
   }
   return context;
 }
-

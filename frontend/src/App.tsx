@@ -11,6 +11,7 @@ import { LeaderboardScreen } from './components/LeaderboardScreen';
 import { LoginScreen } from './components/LoginScreen';
 import { RegisterScreen } from './components/RegisterScreen';
 import { ProfileScreen } from './components/ProfileScreen';
+import { SettingsScreen } from './components/SettingsScreen';
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { Timer } from './components/Timer';
 import { PlayerNameModal } from './components/PlayerNameModal';
@@ -24,6 +25,7 @@ export default function App() {
   const [showStats, setShowStats] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showNameModal, setShowNameModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -46,6 +48,13 @@ export default function App() {
       }).catch(err => console.error('Failed to update stats:', err));
     }
   }, [state.stage, state.isCorrect, isAuthenticated, token, state.timeTaken]);
+
+  // Use user's preferred difficulty if available when starting game
+  const handleSelectCategory = async (category: string | null) => {
+    if (!category) return;
+    const difficulty = (user?.preferred_difficulty || 'medium') as 'easy' | 'medium' | 'hard';
+    selectCategoryAndStart(category, difficulty);
+  };
 
   async function handleSaveScore(playerName: string) {
     if (state.gameMode === 'timed' && state.timeTaken !== null) {
@@ -92,6 +101,10 @@ export default function App() {
 
   if (showStats) {
     return <StatsScreen onBack={() => setShowStats(false)} />;
+  }
+
+  if (showSettings) {
+    return <SettingsScreen onBack={() => setShowSettings(false)} />;
   }
 
   if (showLeaderboard) {
@@ -144,6 +157,7 @@ export default function App() {
         onStartGame={goToModeSelect}
         onViewStats={() => setShowStats(true)}
         onViewAchievements={() => setShowAchievements(true)}
+        onSettings={() => setShowSettings(true)}
         onLogin={() => setShowLogin(true)}
         onProfile={() => setShowProfile(true)}
         isAuthenticated={isAuthenticated}
@@ -164,7 +178,7 @@ export default function App() {
   if (state.stage === 'category-select') {
     return (
       <CategorySelectScreen
-        onSelectCategory={(category) => selectCategoryAndStart(category, 'medium')}
+        onSelectCategory={handleSelectCategory}
         onBack={goToModeSelect}
       />
     );

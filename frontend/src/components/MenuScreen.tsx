@@ -2,13 +2,14 @@ type MenuScreenProps = {
   onStartGame: () => void;
   onViewStats: () => void;
   onViewAchievements?: () => void;
+  onSettings?: () => void;
   onLogin?: () => void;
   onProfile?: () => void;
   isAuthenticated?: boolean;
   username?: string;
 };
 
-export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onLogin, onProfile, isAuthenticated, username }: MenuScreenProps) {
+export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onSettings, onLogin, onProfile, isAuthenticated, username }: MenuScreenProps) {
   return (
     <div className="center">
       <div className="container" style={{ textAlign: 'center', maxWidth: '600px' }}>
@@ -63,6 +64,16 @@ export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onLog
             </button>
           )}
 
+          {isAuthenticated && onSettings && (
+            <button
+              className="button"
+              onClick={onSettings}
+              style={{ fontSize: '16px', padding: '12px 24px', background: '#4b5563' }}
+            >
+              Ayarlar
+            </button>
+          )}
+
           {!isAuthenticated && onLogin && (
             <button
               className="button"
@@ -75,7 +86,7 @@ export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onLog
         </div>
 
         <div style={{ marginTop: '48px', fontSize: '14px', color: '#6b7280' }}>
-          <p>Hafta 5: Başarı Rozetleri ve Gamification</p>
+          <p>Hafta 6: Zorluk Seviyeleri ve Gelişmiş Özellikler</p>
         </div>
       </div>
     </div>

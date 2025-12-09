@@ -12,6 +12,7 @@ class Image(Base):
     url = Column(String(500), nullable=False)
     is_ai_generated = Column(Boolean, nullable=False, default=False)
     category = Column(String(50), nullable=True)  # "portrait", "landscape", "art", etc.
+    difficulty = Column(String(20), default="medium") # easy, medium, hard
     hint = Column(String(200), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

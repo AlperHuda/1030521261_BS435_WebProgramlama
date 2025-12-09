@@ -144,6 +144,24 @@ def get_user_stats(current_user: User = Depends(get_current_user)):
         average_score=round(average_score, 2)
     )
 
+from ..schemas.user import UserSettingsUpdate
+
+@router.put("/settings", response_model=UserResponse)
+def update_settings(
+    settings: UserSettingsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user settings"""
+    if settings.preferred_difficulty is not None:
+        current_user.preferred_difficulty = settings.preferred_difficulty
+    if settings.is_sound_enabled is not None:
+        current_user.is_sound_enabled = settings.is_sound_enabled
+    
+    db.commit()
+    db.refresh(current_user)
+    return UserResponse.model_validate(current_user)
+
 
 @router.put("/stats/update")
 def update_user_stats(

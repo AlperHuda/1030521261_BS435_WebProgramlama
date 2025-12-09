@@ -15,16 +15,4 @@ class User(Base):
     display_name = Column(String(100), nullable=True)
     
     # Statistics
-    total_games = Column(Integer, default=0, nullable=False)
-    games_won = Column(Integer, default=0, nullable=False)
-    games_lost = Column(Integer, default=0, nullable=False)
-    total_score = Column(Integer, default=0, nullable=False)
-    best_time = Column(Float, nullable=True)
-    
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    last_login = Column(DateTime(timezone=True), nullable=True)
-
-    # Relationships
-    achievements = relationship("UserAchievement", back_populates="user")
 
