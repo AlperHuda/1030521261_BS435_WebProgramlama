@@ -11,8 +11,8 @@ class Image(Base):
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String(500), nullable=False)
     is_ai_generated = Column(Boolean, nullable=False, default=False)
-    category = Column(String(50), nullable=True)  # "portrait", "landscape", "art", etc.
-    difficulty = Column(String(20), default="medium") # easy, medium, hard
+    category = Column(String(50), nullable=True, index=True)  # "portrait", "landscape", "art", etc.
+    difficulty = Column(String(20), default="medium", index=True) # easy, medium, hard
     hint = Column(String(200), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -26,9 +26,9 @@ class GameRound(Base):
     image1_id = Column(Integer, ForeignKey("images.id"), nullable=False)
     image2_id = Column(Integer, ForeignKey("images.id"), nullable=False)
     image3_id = Column(Integer, ForeignKey("images.id"), nullable=False)
-    category = Column(String(50), nullable=True)
-    difficulty = Column(String(20), default="medium")  # easy, medium, hard
-    game_mode = Column(String(50), default="classic")  # classic, timed
+    category = Column(String(50), nullable=True, index=True)
+    difficulty = Column(String(20), default="medium", index=True)  # easy, medium, hard
+    game_mode = Column(String(50), default="classic", index=True)  # classic, timed
     completed = Column(Boolean, default=False)
     start_time = Column(DateTime(timezone=True), nullable=True)
     end_time = Column(DateTime(timezone=True), nullable=True)

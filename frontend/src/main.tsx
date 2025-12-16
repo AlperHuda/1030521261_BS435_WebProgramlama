@@ -4,6 +4,8 @@ import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import './styles.css';
 
+import ErrorBoundary from './components/common/ErrorBoundary';
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element not found');
@@ -11,8 +13,11 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <React.StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
+

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -15,4 +15,21 @@ class User(Base):
     display_name = Column(String(100), nullable=True)
     
     # Statistics
+    total_games = Column(Integer, default=0, nullable=False)
+    games_won = Column(Integer, default=0, nullable=False)
+    games_lost = Column(Integer, default=0, nullable=False)
+    total_score = Column(Integer, default=0, nullable=False, index=True)
+    best_time = Column(Float, nullable=True)
+    
+    # Settings
+    preferred_difficulty = Column(String(20), default="medium")
+    is_sound_enabled = Column(Boolean, default=True)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_login = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships are likely defined in back_populates in other files or here if needed
+    # But based on missing content I'll stop here unless I see relation usage.
+
 

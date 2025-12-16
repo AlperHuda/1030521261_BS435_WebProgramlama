@@ -11,3 +11,13 @@ html, body, #root { height: 100%; margin: 0; font-family: system-ui, -apple-syst
 .title { font-size: 20px; font-weight: 700; margin: 0 0 8px; color: #111827; }
 .text { color: #374151; margin: 0; }
 .center { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+.skeleton {
+  background-color: #e5e7eb;
+  border-radius: 6px;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

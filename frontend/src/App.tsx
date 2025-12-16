@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useGame } from './hooks/useGame';
 import { useAuth } from './context/AuthContext';
 import { MenuScreen } from './components/MenuScreen';
@@ -6,18 +6,29 @@ import { ModeSelectScreen } from './components/ModeSelectScreen';
 import { CategorySelectScreen } from './components/CategorySelectScreen';
 import { GameBoard } from './components/GameBoard';
 import { ResultScreen } from './components/ResultScreen';
-import { StatsScreen } from './components/StatsScreen';
-import { LeaderboardScreen } from './components/LeaderboardScreen';
-import { LoginScreen } from './components/LoginScreen';
-import { RegisterScreen } from './components/RegisterScreen';
-import { ProfileScreen } from './components/ProfileScreen';
-import { SettingsScreen } from './components/SettingsScreen';
+// Lazy loaded components
+const StatsScreen = lazy(() => import('./components/StatsScreen').then(module => ({ default: module.StatsScreen })));
+const LeaderboardScreen = lazy(() => import('./components/LeaderboardScreen').then(module => ({ default: module.LeaderboardScreen })));
+const LoginScreen = lazy(() => import('./components/LoginScreen').then(module => ({ default: module.LoginScreen })));
+const RegisterScreen = lazy(() => import('./components/RegisterScreen').then(module => ({ default: module.RegisterScreen })));
+const ProfileScreen = lazy(() => import('./components/ProfileScreen').then(module => ({ default: module.ProfileScreen })));
+const SettingsScreen = lazy(() => import('./components/SettingsScreen').then(module => ({ default: module.SettingsScreen })));
+const AchievementList = lazy(() => import('./components/AchievementList').then(module => ({ default: module.AchievementList })));
+
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { Timer } from './components/Timer';
 import { PlayerNameModal } from './components/PlayerNameModal';
-import { AchievementList } from './components/AchievementList';
 import { AchievementNotification } from './components/AchievementNotification';
 import { api } from './services/api';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Skeleton from './components/common/Skeleton';
+
+const LoadingScreen = () => (
+  <div className="container center" style={{ flexDirection: 'column', gap: '20px' }}>
+    <Skeleton width="100%" height={60} />
+    <Skeleton width="100%" height={400} />
+  </div>
+);
 
 export default function App() {
   const { state, goToMenu, goToModeSelect, selectMode, selectCategoryAndStart, submitGuess, resetGame, startNewRound, handleTimeUp } = useGame();
@@ -92,63 +103,85 @@ export default function App() {
   if (authLoading) {
     return (
       <div className="center">
-        <div className="container" style={{ textAlign: 'center' }}>
-          <p>Yükleniyor...</p>
-        </div>
+        <LoadingScreen />
       </div>
     );
   }
 
   if (showStats) {
-    return <StatsScreen onBack={() => setShowStats(false)} />;
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <StatsScreen onBack={() => setShowStats(false)} />
+      </Suspense>
+    );
   }
 
   if (showSettings) {
-    return <SettingsScreen onBack={() => setShowSettings(false)} />;
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <SettingsScreen onBack={() => setShowSettings(false)} />
+      </Suspense>
+    );
   }
 
   if (showLeaderboard) {
-    return <LeaderboardScreen onBack={() => { setShowLeaderboard(false); goToMenu(); }} gameMode={state.gameMode || 'timed'} />;
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <LeaderboardScreen onBack={() => { setShowLeaderboard(false); goToMenu(); }} gameMode={state.gameMode || 'timed'} />
+      </Suspense>
+    );
   }
 
   if (showAchievements) {
-    return <AchievementList onBack={() => setShowAchievements(false)} />;
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <AchievementList onBack={() => setShowAchievements(false)} />
+      </Suspense>
+    );
   }
 
   if (showLogin) {
     return (
-      <LoginScreen
-        onLogin={async (username, password) => {
-          await login(username, password);
-          setShowLogin(false);
-        }}
-        onSwitchToRegister={() => {
-          setShowLogin(false);
-          setShowRegister(true);
-        }}
-        onBack={() => setShowLogin(false)}
-      />
+      <Suspense fallback={<LoadingScreen />}>
+        <LoginScreen
+          onLogin={async (username, password) => {
+            await login(username, password);
+            setShowLogin(false);
+          }}
+          onSwitchToRegister={() => {
+            setShowLogin(false);
+            setShowRegister(true);
+          }}
+          onBack={() => setShowLogin(false)}
+        />
+      </Suspense>
     );
   }
 
   if (showRegister) {
     return (
-      <RegisterScreen
-        onRegister={async (username, password, email, displayName) => {
-          await register(username, password, email, displayName);
-          setShowRegister(false);
-        }}
-        onSwitchToLogin={() => {
-          setShowRegister(false);
-          setShowLogin(true);
-        }}
-        onBack={() => setShowRegister(false)}
-      />
+      <Suspense fallback={<LoadingScreen />}>
+        <RegisterScreen
+          onRegister={async (username, password, email, displayName) => {
+            await register(username, password, email, displayName);
+            setShowRegister(false);
+          }}
+          onSwitchToLogin={() => {
+            setShowRegister(false);
+            setShowLogin(true);
+          }}
+          onBack={() => setShowRegister(false)}
+        />
+      </Suspense>
     );
   }
 
   if (showProfile) {
-    return <ProfileScreen onBack={() => setShowProfile(false)} />;
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <ProfileScreen onBack={() => setShowProfile(false)} />
+      </Suspense>
+    );
   }
 
   if (state.stage === 'menu') {
