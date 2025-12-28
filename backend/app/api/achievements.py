@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from ..core.database import get_db
-from ..services.auth import get_current_user
+from .auth import get_current_user
 from ..schemas import achievement as schemas
 from ..services.achievement_service import AchievementService
 from ..models.user import User

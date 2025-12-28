@@ -263,8 +263,48 @@ export const api = {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     await handleResponse<void>(response);
+  },
+
+  // Multiplayer
+  async createLobby(token: string): Promise<{ lobby_id: string }> {
+    const response = await fetch(`${API_BASE_URL}/multiplayer/lobby/create`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<{ lobby_id: string }>(response);
+  },
+
+  async joinLobby(token: string, lobbyId: string): Promise<{ message: string, lobby_id: string }> {
+    const response = await fetch(`${API_BASE_URL}/multiplayer/lobby/join/${lobbyId}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<{ message: string, lobby_id: string }>(response);
+  },
+
+  async getLobby(token: string, lobbyId: string): Promise<LobbyStatus> {
+    const response = await fetch(`${API_BASE_URL}/multiplayer/lobby/${lobbyId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<LobbyStatus>(response);
   }
 };
+
+export interface LobbyStatus {
+  lobby_id: string;
+  status: 'WAITING' | 'PLAYING' | 'FINISHED';
+  host_id: number;
+  players: LobbyPlayer[];
+  player_count: number;
+}
+
+export interface LobbyPlayer {
+  user_id: number;
+  username: string;
+  is_ready: boolean;
+  score: number;
+  is_host: boolean;
+}
 
 export interface LeaderboardEntry {
   id: number;

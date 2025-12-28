@@ -25,6 +25,16 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     app.add_middleware(SlowAPIMiddleware)
 
+    # Static Files
+    from fastapi.staticfiles import StaticFiles
+    import os
+    
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    if not os.path.exists(static_dir):
+        os.makedirs(static_dir)
+        
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -39,6 +49,10 @@ def create_app() -> FastAPI:
     app.include_router(leaderboard_router)
     app.include_router(auth_router)
     app.include_router(achievements_router, prefix="/achievements", tags=["achievements"])
+    
+    from .api.multiplayer import router as multiplayer_router
+    app.include_router(multiplayer_router)
+    
     return app
 
 

@@ -30,6 +30,9 @@ class UserResponse(UserBase):
     created_at: datetime
     last_login: Optional[datetime]
 
+    class Config:
+        from_attributes = True
+
 class UserSettingsUpdate(BaseModel):
     preferred_difficulty: Optional[str] = None
     is_sound_enabled: Optional[bool] = None

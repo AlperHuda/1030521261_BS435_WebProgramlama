@@ -16,6 +16,10 @@ class Image(Base):
     hint = Column(String(200), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # Link to a specific scenario (optional, for real images that belong to a specific prompt context)
+    scenario_id = Column(Integer, ForeignKey("scenarios.id"), nullable=True)
+    scenario = relationship("Scenario", back_populates="images")
+
 
 class GameRound(Base):
     __tablename__ = "game_rounds"
@@ -33,6 +37,9 @@ class GameRound(Base):
     start_time = Column(DateTime(timezone=True), nullable=True)
     end_time = Column(DateTime(timezone=True), nullable=True)
     time_limit = Column(Integer, nullable=True)  # seconds, for timed mode
+    
+    # Store the scenario used for this round
+    scenario_id = Column(Integer, ForeignKey("scenarios.id"), nullable=True)
 
     image1 = relationship("Image", foreign_keys=[image1_id])
     image2 = relationship("Image", foreign_keys=[image2_id])

@@ -5,25 +5,16 @@ from datetime import datetime
 import random
 
 from ..models.game import GameRound, Guess, Image
-
+from ..models.scenario import Scenario
+from .openai_service import OpenAIService
 
 def get_random_images(db: Session, category: Optional[str] = None, count: int = 3) -> List[Image]:
-    """Get random images: 2 real + 1 AI-generated"""
+    """Get random images: 2 real + 1 AI-generated (Old Logic / Fallback)"""
     query = db.query(Image)
     
-    # Filter by difficulty if provided (Note: currently defaulting to medium logic if no difficulty logic on images yet)
-    # If images have difficulty column, we use it.
     if category:
         query = query.filter(Image.category == category)
     
-    # Try to get images of matching difficulty first
-    difficulty_query = query
-    if hasattr(Image, "difficulty"): # Safety check
-         # For simplicity, if difficulty is hard, maybe try to match? 
-         # Or just rely on random for now if DB isn't fully populated with difficulty
-         # Let's try to filter if passed.
-         pass 
-
     # Get 2 real images
     real_images = query.filter(Image.is_ai_generated == False).order_by(func.random()).limit(2).all()
     
@@ -34,8 +25,10 @@ def get_random_images(db: Session, category: Optional[str] = None, count: int = 
     ai_images = ai_query.order_by(func.random()).limit(1).all()
     
     if len(real_images) < 2 or len(ai_images) < 1:
-        raise ValueError("Not enough images in database")
-    
+        # If we don't have enough images, we might be in a fresh DB state.
+        # This error is expected if not seeded.
+        pass 
+        
     return real_images + ai_images
 
 
@@ -46,8 +39,58 @@ def create_round(
     game_mode: str = "classic",
     time_limit: Optional[int] = None
 ) -> GameRound:
-    """Create a new game round with 3 random images"""
-    images = get_random_images(db, category, count=3)
+    """Create a new game round with 3 images (Scenario + DALL-E preferred)"""
+    
+    # 1. Try to fetch a random Scenario
+    scenario_query = db.query(Scenario)
+    if category:
+        scenario_query = scenario_query.filter(Scenario.category == category)
+    if difficulty:
+         scenario_query = scenario_query.filter(Scenario.difficulty == difficulty)
+         
+    scenario = scenario_query.order_by(func.random()).first()
+    
+    images = []
+    selected_scenario_id = None
+    
+    # 2. If Scenario exists, try to use it
+    if scenario:
+        # Get 2 real images for this scenario
+        real_images = db.query(Image).filter(
+            Image.scenario_id == scenario.id,
+            Image.is_ai_generated == False
+        ).order_by(func.random()).limit(2).all()
+        
+        if len(real_images) >= 2:
+            # Generate AI Image
+            image_url = OpenAIService.generate_image(scenario.prompt_text)
+            
+            # Save generated image to DB
+            ai_image = Image(
+                url=image_url,
+                is_ai_generated=True,
+                category=scenario.category,
+                difficulty=scenario.difficulty,
+                scenario_id=scenario.id,
+                hint="AI tarafından üretilmiştir." # Default hint, can be improved
+            )
+            db.add(ai_image)
+            db.commit()
+            db.refresh(ai_image)
+            
+            images = real_images + [ai_image]
+            selected_scenario_id = scenario.id
+            
+    # 3. Fallback to random selection if no scenario or not enough real images for scenario
+    if len(images) < 3:
+        try:
+            images = get_random_images(db, category, count=3)
+            # Check validation inside get_random_images, but we need to re-verify here
+            if len(images) < 3:
+                 raise ValueError("Not enough images in database")
+        except ValueError:
+             raise ValueError("Not enough images in database and no valid scenario found.")
+
     
     # Shuffle to randomize AI image position
     random.shuffle(images)
@@ -68,6 +111,7 @@ def create_round(
         game_mode=game_mode,
         time_limit=time_limit if game_mode == "timed" else None,
         start_time=start_time,
+        scenario_id=selected_scenario_id,
         completed=False
     )
     

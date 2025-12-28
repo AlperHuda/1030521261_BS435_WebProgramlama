@@ -1,48 +1,39 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React from 'react';
+import { ErrorBoundary as ReactErrorBoundary, FallbackProps } from 'react-error-boundary';
 
 interface Props {
-    children: ReactNode;
-    fallback?: ReactNode;
+    children: React.ReactNode;
+    fallback?: React.ReactNode;
 }
 
-interface State {
-    hasError: boolean;
-    error?: Error;
-}
+const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) => {
+    return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+            <h2>Something went wrong.</h2>
+            <p>We're sorry, but an unexpected error occurred.</p>
+            {error && (
+                <details style={{ whiteSpace: 'pre-wrap', margin: '10px 0', color: 'red' }}>
+                    {error.message}
+                </details>
+            )}
+            <button onClick={() => window.location.reload()} className="button" style={{ marginTop: '10px' }}>
+                Reload Page
+            </button>
+        </div>
+    );
+};
 
-class ErrorBoundary extends Component<Props, State> {
-    public state: State = {
-        hasError: false
-    };
-
-    public static getDerivedStateFromError(error: Error): State {
-        return { hasError: true, error };
-    }
-
-    public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.error("Uncaught error:", error, errorInfo);
-    }
-
-    public render() {
-        if (this.state.hasError) {
-            return this.props.fallback || (
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                    <h2>Something went wrong.</h2>
-                    <p>We're sorry, but an unexpected error occurred.</p>
-                    {this.state.error && (
-                        <details style={{ whiteSpace: 'pre-wrap', margin: '10px 0', color: 'red' }}>
-                            {this.state.error.toString()}
-                        </details>
-                    )}
-                    <button onClick={() => window.location.reload()} className="button" style={{ marginTop: '10px' }}>
-                        Reload Page
-                    </button>
-                </div>
-            );
-        }
-
-        return this.props.children;
-    }
-}
+const ErrorBoundary: React.FC<Props> = ({ children, fallback }) => {
+    return (
+        <ReactErrorBoundary
+            FallbackComponent={fallback ? () => <>{fallback}</> : ErrorFallback}
+            onReset={() => {
+                // reset the state of your app so the error doesn't happen again
+            }}
+        >
+            {children}
+        </ReactErrorBoundary>
+    );
+};
 
 export default ErrorBoundary;

@@ -5,11 +5,12 @@ type MenuScreenProps = {
   onSettings?: () => void;
   onLogin?: () => void;
   onProfile?: () => void;
+  onMultiplayer?: () => void;
   isAuthenticated?: boolean;
   username?: string;
 };
 
-export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onSettings, onLogin, onProfile, isAuthenticated, username }: MenuScreenProps) {
+export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onSettings, onLogin, onProfile, onMultiplayer, isAuthenticated, username }: MenuScreenProps) {
   return (
     <div className="center">
       <div className="container" style={{ textAlign: 'center', maxWidth: '600px' }}>
@@ -51,6 +52,16 @@ export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onSet
               style={{ fontSize: '16px', padding: '12px 24px', background: '#eab308' }}
             >
               Rozetlerim
+            </button>
+          )}
+
+          {isAuthenticated && (
+            <button
+              className="button"
+              onClick={onMultiplayer}
+              style={{ fontSize: '16px', padding: '12px 24px', background: '#9333ea' }}
+            >
+              Çok Oyunculu
             </button>
           )}
 

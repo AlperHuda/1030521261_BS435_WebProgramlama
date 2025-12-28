@@ -29,7 +29,8 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_login = Column(DateTime(timezone=True), nullable=True)
 
-    # Relationships are likely defined in back_populates in other files or here if needed
-    # But based on missing content I'll stop here unless I see relation usage.
+    # Relationships
+    achievements = relationship("UserAchievement", back_populates="user")
+
 
 
