@@ -85,9 +85,7 @@ export function MenuScreen({ onStartGame, onViewStats, onViewAchievements, onSet
           )}
         </div>
 
-        <div style={{ marginTop: '48px', fontSize: '14px', color: '#6b7280' }}>
-          <p>Hafta 6: Zorluk Seviyeleri ve Gelişmiş Özellikler</p>
-        </div>
+
       </div>
     </div>
   );
