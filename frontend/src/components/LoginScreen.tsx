@@ -35,10 +35,11 @@ export function LoginScreen({ onLogin, onSwitchToRegister, onBack }: LoginScreen
 
         <form onSubmit={handleSubmit} style={{ marginBottom: '16px' }}>
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+            <label htmlFor="username" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
               Kullanıcı Adı
             </label>
             <input
+              id="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -54,10 +55,11 @@ export function LoginScreen({ onLogin, onSwitchToRegister, onBack }: LoginScreen
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+            <label htmlFor="password" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
               Şifre
             </label>
             <input
+              id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

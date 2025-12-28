@@ -53,6 +53,28 @@ def create_app() -> FastAPI:
     from .api.multiplayer import router as multiplayer_router
     app.include_router(multiplayer_router)
     
+    @app.on_event("startup")
+    def startup_seed():
+        from .core.database import SessionLocal
+        from .models.game import Image
+        from .scripts.seed_advanced import seed_advanced
+        
+        print("Checking database state for seeding...")
+        db = SessionLocal()
+        try:
+            # Check if we have any real images
+            image_count = db.query(Image).filter(Image.is_ai_generated == False).count()
+            if image_count == 0:
+                print("No real images found (fresh install?). Starting automatic advanced seeding...")
+                print("This may take a few minutes as we download high-quality images...")
+                seed_advanced(db)
+            else:
+                print(f"Skipping seeding: Found {image_count} existing real images.")
+        except Exception as e:
+            print(f"Startup seeding check failed: {e}")
+        finally:
+            db.close()
+
     return app
 
 

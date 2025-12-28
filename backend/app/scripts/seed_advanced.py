@@ -5,6 +5,7 @@ Run: python -m app.scripts.seed_advanced
 import os
 import requests
 import time
+import hashlib
 from sqlalchemy.orm import Session
 from app.core.database import engine, Base, SessionLocal
 from app.models.scenario import Scenario
@@ -18,15 +19,20 @@ if not os.path.exists(STATIC_DIR):
 def download_image(url: str, filename: str) -> str:
     """Download image and return local path"""
     try:
-        response = requests.get(url, timeout=10)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             filepath = os.path.join(STATIC_DIR, filename)
             with open(filepath, "wb") as f:
                 f.write(response.content)
             # Return web-accessible path
             return f"/static/images/real/{filename}"
+        else:
+            print(f"  [X] Status Code {response.status_code} for {url}")
     except Exception as e:
-        print(f"Failed to download {url}: {e}")
+        print(f"  [X] Failed to download {url}: {e}")
     # Fallback to original URL if download fails
     return url
 
@@ -173,21 +179,97 @@ SCENARIOS = [
         "difficulty": "hard",
         "keywords": ["volcano", "lava", "eruption"],
         "ids": ["1462331940023-8630676882f8", "1518182195610-1845bb08c028", "1631551107579-3d1490231934"]
+    },
+    {
+        "prompt": "Tropikal plajda gün batımı, palmiye ağaçları, altın saat.",
+        "category": "nature",
+        "difficulty": "easy",
+        "keywords": ["tropical", "beach", "sunset"],
+        "ids": []
+    },
+    {
+        "prompt": "Sibernetik laboratuvar, yüksek teknoloji arayüz, hologram.",
+        "category": "sci-fi",
+        "difficulty": "medium",
+        "keywords": ["cybernetic", "lab", "hologram"],
+        "ids": []
+    },
+    {
+        "prompt": "Sonbahar ormanında antik yol, dökülen yapraklar.",
+        "category": "nature",
+        "difficulty": "easy",
+        "keywords": ["autumn", "forest", "path"],
+        "ids": []
+    },
+    {
+        "prompt": "Kalabalık Tokyo caddesi, insan seli, şehir ışıkları.",
+        "category": "landscape",
+        "difficulty": "hard",
+        "keywords": ["tokyo", "street", "crowd"],
+        "ids": []
+    },
+    {
+        "prompt": "Soyut geometrik şekiller, 3D render, renkli.",
+        "category": "art",
+        "difficulty": "hard",
+        "keywords": ["abstract", "geometric", "3d"],
+        "ids": []
+    },
+    {
+        "prompt": "Klasik kütüphane, eski kitaplar, ahşap merdiven.",
+        "category": "historical",
+        "difficulty": "medium",
+        "keywords": ["library", "books", "shelf"],
+        "ids": []
+    },
+    {
+        "prompt": "Karlı dağ zirvesi, tırmanıcı, ekstrem spor.",
+        "category": "sports",
+        "difficulty": "hard",
+        "keywords": ["mountain", "climber", "snow"],
+        "ids": []
+    },
+    {
+        "prompt": "Su altı batığı, balıklar, gizemli.",
+        "category": "nature",
+        "difficulty": "medium",
+        "keywords": ["shipwreck", "underwater", "ocean"],
+        "ids": []
+    },
+    {
+        "prompt": "Fütüristik uçan araba, gökdelenler, bulutlar.",
+        "category": "sci-fi",
+        "difficulty": "medium",
+        "keywords": ["flying car", "future", "skyline"],
+        "ids": []
+    },
+    {
+        "prompt": "Orta çağ pazar tezgahı, meyveler, tüccar.",
+        "category": "historical",
+        "difficulty": "easy",
+        "keywords": ["medieval", "market", "fruit"],
+        "ids": []
     }
 ]
 
 def seed_advanced(db: Session):
-    print("Starting advanced seed process...")
+    print("Starting advanced seed process (Adaptive Mode)...")
+    print("Target: 20 successful scenarios with 3 unique images each.")
+    
+    successful_scenarios_count = 0
+    total_processed = 0
     
     for i, data in enumerate(SCENARIOS):
-        print(f"[{i+1}/20] Processing: {data['prompt']}")
+        if successful_scenarios_count >= 20:
+            print(f"Goal reached! {successful_scenarios_count} scenarios seeded successfully.")
+            break
+            
+        print(f"[{total_processed+1}/{len(SCENARIOS)}] Processing candidate: {data['prompt']}")
+        total_processed += 1
         
         # Check if scenario exists
-        existing = db.query(Scenario).filter(Scenario.prompt_text == data["prompt"]).first()
-        if existing:
-            print("  - Exists, skipping creation.")
-            scenario = existing
-        else:
+        scenario = db.query(Scenario).filter(Scenario.prompt_text == data["prompt"]).first()
+        if not scenario:
             scenario = Scenario(
                 prompt_text=data["prompt"],
                 category=data["category"],
@@ -197,40 +279,107 @@ def seed_advanced(db: Session):
             db.commit()
             db.refresh(scenario)
         
-        # Process Images
-        real_images_count = db.query(Image).filter(
-            Image.scenario_id == scenario.id, 
-            Image.is_ai_generated == False
-        ).count()
-        
-        if real_images_count >= 3:
-            print("  - Real images already exist.")
-            continue
-            
-        print("  - Downloading real images...")
-        for j, img_id in enumerate(data["ids"]):
-            # Construct Unsplash URL
-            # https://images.unsplash.com/photo-ID?w=800&q=80
-            url = f"https://images.unsplash.com/photo-{img_id}?auto=format&fit=crop&w=800&q=80"
-            filename = f"sc{scenario.id}_img{j+1}_{img_id[:8]}.jpg"
-            
-            # Download
-            saved_path = download_image(url, filename)
-            
-            # Add to DB
-            img = Image(
-                url=saved_path,
-                is_ai_generated=False,
-                category=data["category"],
-                difficulty=data["difficulty"],
-                scenario_id=scenario.id
-            )
-            db.add(img)
-            time.sleep(0.5) # Polite delay
-        
+        # Cleanup existing images for a clean retry
+        existing_images = db.query(Image).filter(Image.scenario_id == scenario.id, Image.is_ai_generated == False).all()
+        for img in existing_images:
+            if img.url.startswith("/static/"):
+                relative_path = img.url.lstrip("/")
+                full_path = os.path.join("app", relative_path)
+                if os.path.exists(full_path):
+                    try:
+                        os.remove(full_path)
+                    except:
+                        pass
+            db.delete(img)
         db.commit()
 
-    print("Advanced seed complete!")
+        print("  - Attempting to download 3 unique images...")
+        
+        # Sanitize keywords
+        sanitized_keywords = []
+        for k in data["keywords"]:
+            sanitized_keywords.extend(k.split())
+        base_keywords = ",".join(sanitized_keywords)
+        
+        scenario_hashes = set()
+        count = 0
+        attempts = 0
+        max_attempts = 15 # Increased for better chance
+        
+        current_scenario_images = [] # Track images for this specific scenario attempt
+
+        while count < 3 and attempts < max_attempts:
+             attempts += 1
+             unique_seed = i * 1000 + count * 100 + attempts
+             
+             # Primary Source: LoremFlickr
+             url = f"https://loremflickr.com/800/600/{base_keywords}/all?lock={unique_seed}"
+             filename = f"sc{scenario.id}_img{count+1}_{int(time.time())}_{attempts}.jpg"
+             
+             # Download
+             saved_path = download_image(url, filename)
+             
+             # Fallback Source: Picsum
+             if not saved_path.startswith("/static/"):
+                 print(f"    Fallback to Picsum...")
+                 fallback_url = f"https://picsum.photos/800/600?random={unique_seed}"
+                 saved_path = download_image(fallback_url, filename)
+
+             # Validate Uniqueness
+             if saved_path.startswith("/static/"):
+                 full_path = os.path.join(STATIC_DIR, filename)
+                 try:
+                     with open(full_path, "rb") as f:
+                         content = f.read()
+                         file_hash = hashlib.md5(content).hexdigest()
+                     
+                     if file_hash in scenario_hashes:
+                         print(f"    [!] Duplicate content (Hash: {file_hash[:8]}). Retrying...")
+                         os.remove(full_path)
+                         continue
+                     
+                     scenario_hashes.add(file_hash)
+                 except Exception as e:
+                     print(f"    [!] Hashing error: {e}")
+                     continue # Skip this file if we can't verify it
+             
+                 # Add to DB buffer (not committed yet if we want transactional, but here we commit per image)
+                 # Better: Add to list, commit later? No, we need DB IDs. 
+                 # We will delete them if total count < 3 at the end.
+                 img = Image(
+                     url=saved_path,
+                     is_ai_generated=False,
+                     category=data["category"],
+                     difficulty=data["difficulty"],
+                     scenario_id=scenario.id
+                 )
+                 db.add(img)
+                 db.commit() 
+                 current_scenario_images.append(img)
+                 count += 1
+                 time.sleep(0.8)
+
+        if count == 3:
+            print(f"  [OK] Scenario '{data['prompt'][:30]}...' seeded successfully.")
+            successful_scenarios_count += 1
+        else:
+            print(f"  [FIX] Failed to get 3 unique images (Got {count}). Rolling back this scenario...")
+            # Delete images from DB and Disk
+            for img in current_scenario_images:
+                if img.url.startswith("/static/"):
+                    full_path = os.path.join("app", img.url.lstrip("/"))
+                    if os.path.exists(full_path):
+                        os.remove(full_path)
+                db.delete(img)
+            
+            # Delete scenario from DB
+            db.delete(scenario)
+            db.commit()
+
+    if successful_scenarios_count < 20:
+        print(f"WARNING: Only managed to seed {successful_scenarios_count}/20 scenarios.")
+    else:
+        print("Advanced seed complete! 20 Scenarios ready.")
 
 def main():
     db = SessionLocal()
