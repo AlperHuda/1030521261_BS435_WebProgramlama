@@ -4,9 +4,10 @@ import { api, Category } from '../services/api';
 type CategorySelectScreenProps = {
   onSelectCategory: (categoryName: string | null) => void;
   onBack: () => void;
+  isLoading?: boolean;
 };
 
-export function CategorySelectScreen({ onSelectCategory, onBack }: CategorySelectScreenProps) {
+export function CategorySelectScreen({ onSelectCategory, onBack, isLoading = false }: CategorySelectScreenProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +51,43 @@ export function CategorySelectScreen({ onSelectCategory, onBack }: CategorySelec
 
   return (
     <div className="container">
+      {isLoading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          color: 'white'
+        }}>
+          <div className="spinner" style={{
+            width: '50px',
+            height: '50px',
+            border: '5px solid #f3f3f3',
+            borderTop: '5px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: '20px'
+          }}></div>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>AI Görseli Hazırlanıyor...</h2>
+          <p style={{ marginTop: '10px', opacity: 0.8 }}>Yapay zeka sahneyi oluştururken lütfen bekleyin.</p>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+
       <h2 className="title">Kategori Seçin</h2>
-      
+
       <p className="text" style={{ marginBottom: '24px' }}>
         Bir kategori seçin veya rastgele oynayın
       </p>
@@ -60,7 +96,7 @@ export function CategorySelectScreen({ onSelectCategory, onBack }: CategorySelec
         <div
           className="card"
           style={{ cursor: 'pointer', transition: 'transform 0.2s', background: '#f3f4f6' }}
-          onClick={() => onSelectCategory(null)}
+          onClick={() => !isLoading && onSelectCategory(null)}
           onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
           onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
         >
@@ -76,10 +112,10 @@ export function CategorySelectScreen({ onSelectCategory, onBack }: CategorySelec
           <div
             key={category.id}
             className="card"
-            style={{ cursor: 'pointer', transition: 'transform 0.2s' }}
-            onClick={() => onSelectCategory(category.name)}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+            style={{ cursor: 'pointer', transition: 'transform 0.2s', opacity: isLoading ? 0.5 : 1 }}
+            onClick={() => !isLoading && onSelectCategory(category.name)}
+            onMouseEnter={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(-4px)')}
+            onMouseLeave={(e) => !isLoading && (e.currentTarget.style.transform = 'translateY(0)')}
           >
             <div className="content" style={{ padding: '20px', textAlign: 'center' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 600 }}>
@@ -95,7 +131,7 @@ export function CategorySelectScreen({ onSelectCategory, onBack }: CategorySelec
         ))}
       </div>
 
-      <button className="button" onClick={onBack} style={{ background: '#6b7280' }}>
+      <button className="button" onClick={onBack} disabled={isLoading} style={{ background: '#6b7280', opacity: isLoading ? 0.5 : 1 }}>
         Geri Dön
       </button>
     </div>

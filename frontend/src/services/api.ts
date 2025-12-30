@@ -36,7 +36,7 @@ export interface StatsResponse {
 export interface RoundCreateRequest {
   category?: string | null;
   difficulty?: 'easy' | 'medium' | 'hard';
-  game_mode?: 'classic' | 'timed';
+  game_mode?: string;
   time_limit?: number;
 }
 

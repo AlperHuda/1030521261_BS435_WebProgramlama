@@ -64,7 +64,7 @@ export default function App() {
 
   // Use user's preferred difficulty if available when starting game
   const handleSelectCategory = async (category: string | null) => {
-    if (!category) return;
+    // category can be null for "Random"
     const difficulty = (user?.preferred_difficulty || 'medium') as 'easy' | 'medium' | 'hard';
     selectCategoryAndStart(category, difficulty);
   };
@@ -230,6 +230,7 @@ export default function App() {
       <CategorySelectScreen
         onSelectCategory={handleSelectCategory}
         onBack={goToModeSelect}
+        isLoading={state.isLoading}
       />
     );
   }
@@ -237,7 +238,7 @@ export default function App() {
   if (state.stage === 'play') {
     return (
       <div>
-        {state.gameMode === 'timed' && state.timeLimit && (
+        {(state.gameMode === 'timed' || state.gameMode === 'time_attack') && state.timeLimit && (
           <div className="container" style={{ paddingBottom: 0 }}>
             <Timer
               timeLimit={state.timeLimit}

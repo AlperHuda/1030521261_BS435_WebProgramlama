@@ -58,10 +58,14 @@ def create_app() -> FastAPI:
         from .core.database import SessionLocal
         from .models.game import Image
         from .scripts.seed_advanced import seed_advanced
+        from .scripts.seed_game_modes import seed_game_modes
         
         print("Checking database state for seeding...")
         db = SessionLocal()
         try:
+            # Seed Game Modes (always check/add missing modes)
+            seed_game_modes(db)
+
             # Check if we have any real images
             image_count = db.query(Image).filter(Image.is_ai_generated == False).count()
             if image_count == 0:

@@ -19,18 +19,20 @@ export function useGame() {
 
   async function selectCategoryAndStart(category: string | null, difficulty: 'easy' | 'medium' | 'hard' = 'medium') {
     setState(prev => ({ ...prev, isLoading: true, error: null, category }));
-    
+
     try {
       const gameMode = state.gameMode || 'classic';
-      const timeLimit = gameMode === 'timed' ? 30 : null;
-      
+      // Map 'time_attack' to timed logic
+      const isTimedMode = gameMode === 'timed' || gameMode === 'time_attack';
+      const timeLimit = isTimedMode ? 30 : null;
+
       const response = await api.createRound({
         category,
         difficulty,
-        game_mode: gameMode as 'classic' | 'timed',
+        game_mode: gameMode,
         time_limit: timeLimit || undefined,
       });
-      
+
       setState(prev => ({
         ...prev,
         stage: 'play',
@@ -54,21 +56,21 @@ export function useGame() {
 
   async function submitGuess(selectedIndex: number) {
     if (!state.roundId) return;
-    
+
     setState(prev => ({ ...prev, isLoading: true, error: null, selectedIndex }));
-    
+
     // Calculate time taken
     const timeTaken = state.startTime
       ? (Date.now() - state.startTime.getTime()) / 1000
       : 0;
-    
+
     try {
       const response = await api.submitGuess(state.roundId, selectedIndex);
-      
+
       if (response.game_over) {
         // Calculate score for timed mode
         const score = response.is_correct ? (state.gameMode === 'timed' ? 1 : 0) : 0;
-        
+
         // Game is over, go to result screen
         setState(prev => ({
           ...prev,
@@ -100,7 +102,7 @@ export function useGame() {
       }));
     }
   }
-  
+
   function handleTimeUp() {
     // Time's up, mark as incorrect
     setState(prev => ({
