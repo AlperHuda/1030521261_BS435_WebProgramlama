@@ -1,3 +1,4 @@
+
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useGame } from './hooks/useGame';
 import { useAuth } from './context/AuthContext';
@@ -6,6 +7,9 @@ import { ModeSelectScreen } from './components/ModeSelectScreen';
 import { CategorySelectScreen } from './components/CategorySelectScreen';
 import { GameBoard } from './components/GameBoard';
 import { ResultScreen } from './components/ResultScreen';
+import { soundService } from './services/sound';
+import { api } from './services/api';
+
 // Lazy loaded components
 const StatsScreen = lazy(() => import('./components/StatsScreen').then(module => ({ default: module.StatsScreen })));
 const LeaderboardScreen = lazy(() => import('./components/LeaderboardScreen').then(module => ({ default: module.LeaderboardScreen })));
@@ -21,7 +25,6 @@ import { ErrorDisplay } from './components/ErrorDisplay';
 import { Timer } from './components/Timer';
 import { PlayerNameModal } from './components/PlayerNameModal';
 import { AchievementNotification } from './components/AchievementNotification';
-import { api } from './services/api';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Skeleton from './components/common/Skeleton';
 
@@ -47,9 +50,20 @@ export default function App() {
   const [activeMultiplayerLobby, setActiveMultiplayerLobby] = useState<string | null>(null);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
 
+  // Sync sound settings
+  useEffect(() => {
+    if (user) {
+      soundService.setEnabled(user.is_sound_enabled ?? true);
+    }
+  }, [user]);
+
   // Update user stats after game ends
   useEffect(() => {
     if (state.stage === 'result' && isAuthenticated && token && state.isCorrect !== null) {
+      // Play sound
+      if (state.isCorrect) soundService.playCorrect();
+      else soundService.playWrong();
+
       // Update stats and check for new achievements
       api.updateUserStats(
         token,
@@ -59,6 +73,7 @@ export default function App() {
       ).then((earned) => {
         if (earned && earned.length > 0) {
           setNewAchievements(earned);
+          soundService.playCorrect(); // Double ding for achievement?
         }
       }).catch(err => console.error('Failed to update stats:', err));
     }
@@ -225,11 +240,14 @@ export default function App() {
       <MenuScreen
         onStartGame={goToModeSelect}
         onViewStats={() => setShowStats(true)}
-        onViewAchievements={() => setShowAchievements(true)}
-        onSettings={() => setShowSettings(true)}
+
+        // Gated actions: Show always, but check auth on click
+        onViewAchievements={() => isAuthenticated ? setShowAchievements(true) : setShowLogin(true)}
+        onSettings={() => isAuthenticated ? setShowSettings(true) : setShowLogin(true)}
         onLogin={() => setShowLogin(true)}
-        onProfile={() => setShowProfile(true)}
-        onMultiplayer={() => setShowLobby(true)}
+        onProfile={() => isAuthenticated ? setShowProfile(true) : setShowLogin(true)}
+        onMultiplayer={() => isAuthenticated ? setShowLobby(true) : setShowLogin(true)}
+
         isAuthenticated={isAuthenticated}
         username={user?.display_name || user?.username}
       />
@@ -269,7 +287,10 @@ export default function App() {
         )}
         <GameBoard
           images={state.images}
-          onSelect={submitGuess}
+          onSelect={(index) => {
+            soundService.playClick();
+            submitGuess(index);
+          }}
           hint={state.hint}
           isLoading={state.isLoading}
           attemptNumber={state.attemptNumber}

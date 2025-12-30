@@ -120,7 +120,7 @@ export function MenuScreen({
           </button>
 
           {/* Achievements */}
-          {isAuthenticated && onViewAchievements && (
+          {onViewAchievements && (
             <button
               className="button"
               onClick={onViewAchievements}
@@ -139,7 +139,7 @@ export function MenuScreen({
           )}
 
           {/* Multiplayer */}
-          {isAuthenticated && onMultiplayer && (
+          {onMultiplayer && (
             <button
               className="button"
               onClick={onMultiplayer}
@@ -160,7 +160,7 @@ export function MenuScreen({
           )}
 
           {/* Profile */}
-          {isAuthenticated && onProfile && (
+          {onProfile && (
             <button
               className="button"
               onClick={onProfile}
@@ -179,7 +179,7 @@ export function MenuScreen({
           )}
 
           {/* Settings */}
-          {isAuthenticated && onSettings && (
+          {onSettings && (
             <button
               className="button button-secondary"
               onClick={onSettings}
