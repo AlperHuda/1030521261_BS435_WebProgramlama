@@ -12,6 +12,7 @@ from .api.auth import router as auth_router
 from .api.achievements import router as achievements_router
 from .core.config import settings
 from .core.database import Base, engine
+from .models import multiplayer  # Ensure Lobby tables are registered before create_all
 
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
@@ -59,25 +60,46 @@ def create_app() -> FastAPI:
         from .models.game import Image
         from .scripts.seed_advanced import seed_advanced
         from .scripts.seed_game_modes import seed_game_modes
+        from .scripts.seed_categories import seed_categories
+        from .scripts.migrate_db import migrate_db
         
-        print("Checking database state for seeding...")
+        print("--- Startup Sequence Initiated ---")
+        
+        # 1. Database Migration
+        try:
+            print("1. Checking DB Schema...")
+            migrate_db()
+        except Exception as e:
+            print(f"Warning: Migration script failed (might be first run): {e}")
+
+        # 2. Seeding
+        print("2. Verifying Game Data...")
         db = SessionLocal()
         try:
-            # Seed Game Modes (always check/add missing modes)
+             # Basic Categories (essential)
+            seed_categories(db)
+            
+            # Game Modes (essential - auto cleaning logic handled in logic or manual DB reset if needed)
             seed_game_modes(db)
 
-            # Check if we have any real images
+            # 3. Content Seeding
+            # Check if we have any real images or if AI images are missing
             image_count = db.query(Image).filter(Image.is_ai_generated == False).count()
-            if image_count == 0:
-                print("No real images found (fresh install?). Starting automatic advanced seeding...")
-                print("This may take a few minutes as we download high-quality images...")
+            ai_image_count = db.query(Image).filter(Image.is_ai_generated == True).count()
+            
+            if image_count < 10 or ai_image_count < 10:
+                print(f"Content missing (Real: {image_count}, AI: {ai_image_count}). Starting advanced seeding...")
+                print("This ensures you have 20 scenarios with Real + AI images.")
                 seed_advanced(db)
             else:
-                print(f"Skipping seeding: Found {image_count} existing real images.")
+                print(f"Seeding skipped: Sufficient data found (Real: {image_count}, AI: {ai_image_count}).")
+                
         except Exception as e:
-            print(f"Startup seeding check failed: {e}")
+            print(f"Startup seeding failed: {e}")
         finally:
             db.close()
+        
+        print("--- Startup Sequence Complete ---")
 
     return app
 

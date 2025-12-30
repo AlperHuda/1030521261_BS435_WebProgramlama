@@ -6,6 +6,7 @@ import random
 
 from ..models.game import GameRound, Guess, Image
 from ..models.scenario import Scenario
+from ..models.game_mode import GameMode
 from .openai_service import OpenAIService
 
 def get_random_images(db: Session, category: Optional[str] = None, count: int = 3) -> List[Image]:
@@ -41,6 +42,14 @@ def create_round(
 ) -> GameRound:
     """Create a new game round with 3 images (Scenario + DALL-E preferred)"""
     
+    # Fetch Game Rules from DB
+    mode_rules = db.query(GameMode).filter(GameMode.name == game_mode).first()
+    
+    # Determine effective time limit
+    effective_time_limit = time_limit
+    if effective_time_limit is None and mode_rules:
+        effective_time_limit = mode_rules.time_limit
+    
     # 1. Try to fetch a random Scenario
     scenario_query = db.query(Scenario)
     if category:
@@ -62,21 +71,30 @@ def create_round(
         ).order_by(func.random()).limit(2).all()
         
         if len(real_images) >= 2:
-            # Generate AI Image
-            image_url = OpenAIService.generate_image(scenario.prompt_text)
+            # 1. Try to find existing AI image for this scenario (Pre-seeded)
+            existing_ai_image = db.query(Image).filter(
+                Image.scenario_id == scenario.id,
+                Image.is_ai_generated == True
+            ).first()
             
-            # Save generated image to DB
-            ai_image = Image(
-                url=image_url,
-                is_ai_generated=True,
-                category=scenario.category,
-                difficulty=scenario.difficulty,
-                scenario_id=scenario.id,
-                hint="AI tarafından üretilmiştir." # Default hint, can be improved
-            )
-            db.add(ai_image)
-            db.commit()
-            db.refresh(ai_image)
+            if existing_ai_image:
+                 ai_image = existing_ai_image
+            else:
+                # 2. Generate/Get AI Image if not found
+                image_url = OpenAIService.generate_image(scenario.prompt_text)
+                
+                # Save generated image to DB
+                ai_image = Image(
+                    url=image_url,
+                    is_ai_generated=True,
+                    category=scenario.category,
+                    difficulty=scenario.difficulty,
+                    scenario_id=scenario.id,
+                    hint="AI tarafından üretilmiştir." # Default hint, can be improved
+                )
+                db.add(ai_image)
+                db.commit()
+                db.refresh(ai_image)
             
             images = real_images + [ai_image]
             selected_scenario_id = scenario.id
@@ -98,8 +116,8 @@ def create_round(
     # Find AI image index
     ai_index = next(i for i, img in enumerate(images) if img.is_ai_generated)
     
-    # Set start time for timed mode
-    start_time = datetime.utcnow() if game_mode == "timed" else None
+    # Set start time if there is a time limit
+    start_time = datetime.utcnow() if effective_time_limit else None
     
     round_obj = GameRound(
         ai_image_index=ai_index,
@@ -109,7 +127,7 @@ def create_round(
         category=category,
         difficulty=difficulty,
         game_mode=game_mode,
-        time_limit=time_limit if game_mode == "timed" else None,
+        time_limit=effective_time_limit,
         start_time=start_time,
         scenario_id=selected_scenario_id,
         completed=False
@@ -137,12 +155,20 @@ def evaluate_guess(db: Session, round_id: int, selected_index: int) -> Tuple[boo
     if round_obj.completed:
         raise ValueError("Round already completed")
     
+    # Fetch Game Mode Rules for Max Lives
+    # Default to 2 lives (classic) if mode not found
+    mode_rules = db.query(GameMode).filter(GameMode.name == round_obj.game_mode).first()
+    max_lives = mode_rules.max_lives if mode_rules else 2
+    
     # Count existing guesses
     existing_guesses = db.query(Guess).filter(Guess.round_id == round_id).count()
     attempt_number = existing_guesses + 1
     
-    if attempt_number > 2:
-        raise ValueError("Maximum attempts exceeded")
+    if attempt_number > max_lives:
+        # Should normally be caught by completed check, but safe guard
+        round_obj.completed = True
+        db.commit()
+        return False, attempt_number, True, None
     
     is_correct = selected_index == round_obj.ai_image_index
     
@@ -156,15 +182,15 @@ def evaluate_guess(db: Session, round_id: int, selected_index: int) -> Tuple[boo
     db.add(guess)
     
     # Determine game state
-    game_over = is_correct or attempt_number >= 2
+    # Game Over if: Correct Guess OR Max Attempts Reached
+    game_over = is_correct or attempt_number >= max_lives
     
     if game_over:
         round_obj.completed = True
     
-    # Get hint if first attempt was wrong
-    # Get hint if first attempt was wrong
+    # Get hint if wrong and still has lives
     hint = None
-    if not is_correct and attempt_number == 1:
+    if not is_correct and not game_over:
         # Check difficulty
         if round_obj.difficulty == "hard":
             hint = "Zor modda ipucu yok!"

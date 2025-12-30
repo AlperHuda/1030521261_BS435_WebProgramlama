@@ -9,30 +9,26 @@ def migrate_db():
     with engine.connect() as conn:
         print("Checking database schema...")
         
-        # 1. Add scenario_id to images
-        try:
-            conn.execute(text("ALTER TABLE images ADD COLUMN scenario_id INTEGER REFERENCES scenarios(id)"))
-            print("Added scenario_id column to images table.")
-        except Exception as e:
-            if "duplicate column name" in str(e):
-                print("Column scenario_id already exists in images table.")
-            else:
-                print(f"Error altering images table: {e}")
-
-        # 2. Add scenario_id to game_rounds
-        try:
-            conn.execute(text("ALTER TABLE game_rounds ADD COLUMN scenario_id INTEGER REFERENCES scenarios(id)"))
-            print("Added scenario_id column to game_rounds table.")
-        except Exception as e:
-            if "duplicate column name" in str(e):
-                print("Column scenario_id already exists in game_rounds table.")
-            else:
-                print(f"Error altering game_rounds table: {e}")
-
-        # 3. Create scenarios table if not exists (This is usually handled by create_all, but good to ensure)
-        # However, create_all in main.py should handle new tables. 
-        # But if the error was about a column in an existing table, create_all won't fix that.
+        # Game Mode columns
+        columns = [
+            ("time_limit", "INTEGER"),
+            ("max_lives", "INTEGER DEFAULT 3"),
+            ("total_rounds", "INTEGER"),
+            ("vote_seconds", "INTEGER"),
+            ("icon", "VARCHAR") 
+        ]
         
+        for col_name, col_type in columns:
+            try:
+                conn.execute(text(f"ALTER TABLE game_modes ADD COLUMN {col_name} {col_type}"))
+                print(f"Added {col_name} column to game_modes table.")
+            except Exception as e:
+                # SQLite error for duplicate column usually contains specific text
+                if "duplicate column" in str(e).lower() or "no such table" in str(e).lower(): 
+                   print(f"Column {col_name} already exists.")
+                else:
+                   print(f"Note for {col_name}: {e}")
+
         print("Migration check complete.")
 
 if __name__ == "__main__":

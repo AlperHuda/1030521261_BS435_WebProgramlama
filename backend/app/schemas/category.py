@@ -26,7 +26,11 @@ class GameModeBase(BaseModel):
     name: str
     display_name: str
     description: Optional[str] = None
+    icon: Optional[str] = None
     is_active: bool = True
+    time_limit: Optional[int] = None
+    max_lives: Optional[int] = 3
+    total_rounds: Optional[int] = None
 
 
 class GameModeCreate(GameModeBase):
@@ -35,7 +39,6 @@ class GameModeCreate(GameModeBase):
 
 class GameModeResponse(GameModeBase):
     id: int
-    created_at: datetime
 
     class Config:
         from_attributes = True

@@ -8,7 +8,11 @@ class Settings(BaseSettings):
     
     # OpenAI
     openai_api_key: str | None = None
-
+    
+    # AI Görsel Modu
+    # true: Her oyunda OpenAI DALL-E ile yeni görsel üretir (API key gerekli)
+    # false: Önceden üretilmiş statik görsellerden seçer (varsayılan)
+    dynamic_ai: bool = False
 
     class Config:
         env_file = ".env"

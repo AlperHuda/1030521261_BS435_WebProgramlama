@@ -41,8 +41,15 @@ export function useGame() {
         category: response.category,
         difficulty: response.difficulty,
         timeLimit: response.time_limit || null,
-        startTime: response.start_time ? new Date(response.start_time) : new Date(),
+        startTime: new Date(), // Use client time to avoid timezone mismatch (UTC vs Local)
         isLoading: false,
+        // Reset per-round state variables
+        isCorrect: null,
+        attemptNumber: 1,
+        hint: null,
+        aiImageIndex: null,
+        selectedIndex: null,
+        timeTaken: null,
       }));
     } catch (error) {
       setState(prev => ({

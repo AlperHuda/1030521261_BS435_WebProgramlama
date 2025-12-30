@@ -59,7 +59,10 @@ export interface GameMode {
   display_name: string;
   description: string | null;
   is_active: boolean;
-  created_at: string;
+  icon: string | null;
+  time_limit: number | null;
+  max_lives: number | null;
+  total_rounds: number | null;
 }
 
 export interface CategoryStats {

@@ -1,20 +1,26 @@
 """
 Seed script to populate database with 20 distinct scenarios and download real images locally.
+Also seeds AI images from the static/images/ai/ folder for each successful scenario.
 Run: python -m app.scripts.seed_advanced
 """
 import os
 import requests
 import time
 import hashlib
+import random
 from sqlalchemy.orm import Session
 from app.core.database import engine, Base, SessionLocal
 from app.models.scenario import Scenario
 from app.models.game import Image
+from app.services.openai_service import OpenAIService
 
 # Ensure static directory exists
 STATIC_DIR = os.path.join("app", "static", "images", "real")
 if not os.path.exists(STATIC_DIR):
     os.makedirs(STATIC_DIR)
+
+# AI images directory
+AI_STATIC_DIR = os.path.join("app", "static", "images", "ai")
 
 def download_image(url: str, filename: str) -> str:
     """Download image and return local path"""
@@ -36,235 +42,310 @@ def download_image(url: str, filename: str) -> str:
     # Fallback to original URL if download fails
     return url
 
-# 20 Scenarios with high quality Unsplash Source IDs or Keywords
-# Note: source.unsplash.com is deprecated, using images.unsplash.com or reliable direct links where possible.
-# For this script, we will use a list of specific photo IDs from Unsplash to ensure quality.
+
+def seed_ai_image_for_scenario(db: Session, scenario: Scenario, data: dict) -> bool:
+    """
+    Seed the specific AI image for a scenario.
+    If file exists, use it. If not, generate it via OpenAI.
+    """
+    ai_image_filename = data.get("ai_image")
+    if not ai_image_filename:
+        print(f"  [!] No AI image defined for this scenario")
+        return False
+    
+    ai_image_path = os.path.join(AI_STATIC_DIR, ai_image_filename)
+    ai_image_url = f"/static/images/ai/{ai_image_filename}"
+    
+    # 1. Check if file exists locally
+    if not os.path.exists(ai_image_path):
+        print(f"  [i] AI image missing locally: {ai_image_filename}")
+        print(f"  [>] Generating new AI image for: {data['prompt'][:30]}...")
+        
+        try:
+            # Generate new image
+            generated_url = OpenAIService.generate_image(data["prompt"])
+            
+            # If generated_url is a remote URL (DALL-E), download it
+            if generated_url.startswith("http"):
+                response = requests.get(generated_url, timeout=30)
+                if response.status_code == 200:
+                    with open(ai_image_path, "wb") as f:
+                        f.write(response.content)
+                    print(f"  [OK] Generated and saved: {ai_image_filename}")
+                else:
+                    print(f"  [!] Failed to download generated image: {response.status_code}")
+                    return False
+            elif generated_url.startswith("/static/"):
+                 # Should not happen if DYNAMIC_AI is True and key is valid, but handle fallback
+                 print("  [!] Warning: Service returned static path, but we wanted to generate.")
+                 return False
+            else:
+                 print("  [!] Unknown URL format returned.")
+                 return False
+                 
+        except Exception as e:
+            print(f"  [!] AI Generation failed: {e}")
+            return False
+
+    # 2. Register to DB
+    existing_ai = db.query(Image).filter(
+        Image.scenario_id == scenario.id,
+        Image.is_ai_generated == True
+    ).first()
+    
+    if existing_ai:
+        if existing_ai.url != ai_image_url:
+            existing_ai.url = ai_image_url
+            db.commit()
+            print(f"  [i] Updated AI image record: {ai_image_filename}")
+    else:
+        # Create hint based on scenario prompt
+        hint = f"AI tarafindan uretildi: {data['prompt'][:50]}..."
+        
+        ai_image = Image(
+            url=ai_image_url,
+            is_ai_generated=True,
+            category=data["category"],
+            difficulty=data["difficulty"],
+            scenario_id=scenario.id,
+            hint=hint
+        )
+        db.add(ai_image)
+        db.commit()
+        print(f"  [+] Registered AI image: {ai_image_filename}")
+        
+    return True
+
+
+# 30 Scenarios - Each with its specific AI image
 SCENARIOS = [
     {
-        "prompt": "Siberpunk şehrinde yağmurlu bir gece, neon ışıklar.",
+        "prompt": "Siberpunk sehrinde yagmurlu bir gece, neon isiklar.",
         "category": "landscape",
         "difficulty": "medium",
         "keywords": ["cyberpunk", "neon", "city"],
-        "ids": ["1515630267754-31d29435b076", "1539721972319-f0e80a00d424", "1542831371-29b0f74f9713"]
+        "ai_image": "cyberpunk_city.png"
     },
     {
-        "prompt": "Orta çağ kalesi, sisli bir sabah manzara.",
+        "prompt": "Orta cag kalesi, sisli bir sabah manzara.",
         "category": "landscape",
         "difficulty": "hard",
         "keywords": ["medieval", "castle", "fog"],
-        "ids": ["1599739527670-3d75727195c6", "1533158326339-7f3c2a380485", "1518709268805-4e9042af9f23"]
+        "ai_image": "medieval_castle.png"
     },
     {
-        "prompt": "Derin deniz dalgıcı, mercan resifleri, su altı keşfi.",
+        "prompt": "Derin deniz dalgici, mercan resifleri, su alti kesfi.",
         "category": "nature",
         "difficulty": "medium",
         "keywords": ["diver", "underwater", "coral"],
-        "ids": ["1544551763-8dd40b991da8", "1582234057630-9fc62678da4b", "1682687220509-0d293d6e3cce"]
+        "ai_image": "underwater_diver.png"
     },
     {
-        "prompt": "Uzay istasyonu içi, astronot süzülüyor, bilim kurgu.",
+        "prompt": "Uzay istasyonu ici, astronot suzuluyor, bilim kurgu.",
         "category": "sci-fi",
         "difficulty": "hard",
         "keywords": ["space station", "astronaut", "iss"],
-        "ids": ["1446776811953-d23dc525c564", "1451187580459-43490279c0fa", "1541873893134-b313aa515311"]
+        "ai_image": "space_station.png"
     },
     {
-        "prompt": "Rönesans tarzı otoportre, klasik sanat, yağlı boya hissi.",
+        "prompt": "Ronesans tarzi otoportre, klasik sanat, yagli boya hissi.",
         "category": "art",
         "difficulty": "easy",
         "keywords": ["renaissance", "portrait", "painting"],
-        "ids": ["1578301978693-858fa30a001a", "1580133318324-f5f7ad8dffdf", "1544005313-94ddf0286df2"]
+        "ai_image": "renaissance_portrait.png"
     },
     {
-        "prompt": "Steampunk atölyesi, dişliler, bakır borular, buhar.",
+        "prompt": "Steampunk atolyesi, disliler, bakir borular, buhar.",
         "category": "fantasy",
         "difficulty": "hard",
         "keywords": ["steampunk", "gears", "clockwork"],
-        "ids": ["1568607617707-a60421ee9879", "1581291599198-ef7070a25695", "1564998725-d72111818274"]
+        "ai_image": "steampunk_workshop.png"
     },
     {
-        "prompt": "Japon Zen bahçesi, kiraz çiçekleri, huzurlu atmosfer.",
+        "prompt": "Japon Zen bahcesi, kiraz cicekleri, huzurlu atmosfer.",
         "category": "nature",
         "difficulty": "easy",
         "keywords": ["zen garden", "cherry blossom", "japan"],
-        "ids": ["1558226027-463d6f1bf93a", "1528360983277-13d9b152c67b", "1524413840807-0c3eb797c456"]
+        "ai_image": "zen_garden.png"
     },
     {
-        "prompt": "Kıyamet sonrası çorak arazi, terkedilmiş arabalar, tozlu yol.",
+        "prompt": "Kiyamet sonrasi corak arazi, terkedilmis arabalar, tozlu yol.",
         "category": "landscape",
         "difficulty": "medium",
         "keywords": ["wasteland", "apocalypse", "desert"],
-        "ids": ["1534237710405-c5460e48ba2e", "1469504512102-c00f90aa91f4", "1508138221679-760a23a2285b"]
+        "ai_image": "post_apocalypse.png"
     },
     {
-        "prompt": "Şeker diyarı, dev lolipoplar, pembe gökyüzü, sürreal.",
+        "prompt": "Seker diyari, dev lolipoplar, pembe gokyuzu, surreal.",
         "category": "fantasy",
         "difficulty": "easy",
         "keywords": ["candy", "sweets", "pastel"],
-        "ids": ["1528821128474-c770c954e384", "1532153354457-5fbe1a9dd650", "1582061596959-1e428c5a2c20"]
+        "ai_image": "candy_land.png"
     },
     {
-        "prompt": "Vahşi batı salonu, kovboylar, eski ahşap bina.",
+        "prompt": "Vahsi bati salonu, kovboylar, eski ahsap bina.",
         "category": "historical",
         "difficulty": "medium",
         "keywords": ["wild west", "saloon", "cowboy"],
-        "ids": ["1544558235-968600d832d2", "1598556857208-48b48f69666c", "1554160472-a2790757a70a"]
+        "ai_image": "wild_west.png"
     },
     {
-        "prompt": "Yabancı bir gezegende gün batımı, iki güneş, mor dağlar.",
+        "prompt": "Yabanci bir gezegende gun batimi, iki gunes, mor daglar.",
         "category": "sci-fi",
         "difficulty": "hard",
         "keywords": ["alien planet", "surreal landscape", "space"],
-        "ids": ["1614730370868-e644d673199c", "1451187580459-43490279c0fa", "1446776811953-d23dc525c564"] # Reusing some space checks
+        "ai_image": "alien_sunset.png"
     },
     {
-        "prompt": "Kara film (Noir) dedektif ofisi, gölgeler, dumanlı hava, siyah beyaz.",
+        "prompt": "Kara film (Noir) dedektif ofisi, golgeler, dumanli hava.",
         "category": "art",
         "difficulty": "medium",
         "keywords": ["noir", "detective", "black and white"],
-        "ids": ["1595856424364-706d953d6911", "1500462918059-b1a0cb512f1d", "1605379399642-870262d3d051"]
+        "ai_image": "noir_detective.png"
     },
     {
-        "prompt": "Antik Mısır tapınağı, hiyeroglifler, kum fırtınası.",
+        "prompt": "Antik Misir tapinagi, hiyeroglifler, kum firtinasi.",
         "category": "historical",
         "difficulty": "hard",
         "keywords": ["egypt", "pyramid", "temple"],
-        "ids": ["1560157975-d227dce7612b", "1518884964640-5712e128148b", "1645524827058-2996c56db322"]
+        "ai_image": "egypt_temple.png"
     },
     {
-        "prompt": "Fırtınalı denizde Viking gemisi, dramatik dalgalar.",
+        "prompt": "Firtinali denizde Viking gemisi, dramatik dalgalar.",
         "category": "historical",
         "difficulty": "hard",
         "keywords": ["viking", "ship", "storm"],
-        "ids": ["1517260739337-6799d2cc4fea", "1605218427306-056580f83732", "1500642879555-520f9c2d15fb"]
+        "ai_image": "viking_ship.png"
     },
     {
-        "prompt": "Robot montaj hattı, endüstriyel kollar, metalik yüzeyler.",
+        "prompt": "Robot montaj hatti, endustriyel kollar, metalik yuzeyler.",
         "category": "sci-fi",
         "difficulty": "medium",
         "keywords": ["robot", "factory", "industrial"],
-        "ids": ["1565514020176-a0f1883dd844", "1581091226825-a6a2a5aee158", "1593979878171-460655823cb2"]
+        "ai_image": "robot_factory.png"
     },
     {
-        "prompt": "Büyülü orman, parlayan mantarlar, peri masalı atmosferi.",
+        "prompt": "Buyulu orman, parlayan mantarlar, peri masali atmosferi.",
         "category": "fantasy",
         "difficulty": "easy",
         "keywords": ["magical forest", "mushroom", "bioluminescent"],
-        "ids": ["1528641973656-5590c68be1f6", "1511497584788-876760111969", "1550684848-fac1c5b4e853"]
+        "ai_image": "magical_forest.png"
     },
     {
-        "prompt": "Formula 1 yarış pisti, hız yapan arabalar, tribünler.",
+        "prompt": "Formula 1 yaris pisti, hiz yapan arabalar, tribunler.",
         "category": "sports",
         "difficulty": "easy",
         "keywords": ["f1", "race car", "formula 1"],
-        "ids": ["1568605117036-5fe5e7bab0b7", "1532906233215-bec55c0e176b", "1592312674239-0bd9f16ea4bc"]
+        "ai_image": "f1_race.png"
     },
     {
-        "prompt": "Perili köşk, terk edilmiş, karanlık pencereler, gotik mimari.",
+        "prompt": "Perili kosk, terk edilmis, karanlik pencereler, gotik mimari.",
         "category": "fantasy",
         "difficulty": "easy",
         "keywords": ["haunted house", "creepy", "gothic"],
-        "ids": ["1505562723652-32130541d087", "1519074069444-1ba4fff66d16", "1518428842426-3cc220b33c04"]
+        "ai_image": "haunted_mansion.png"
     },
     {
-        "prompt": "Kutup keşif ekibi, buzullar, penguenler, soğuk mavi.",
+        "prompt": "Kutup kesif ekibi, buzullar, penguenler, soguk mavi.",
         "category": "nature",
         "difficulty": "medium",
         "keywords": ["artic", "glacier", "ice"],
-        "ids": ["1478546123479-22442cf28d11", "1548396558-75fdc35414ce", "1464739111451-2475529f7f45"]
+        "ai_image": "arctic_expedition.png"
     },
     {
-        "prompt": "Volkanik patlama, lav akıntısı, dumanlar, tehlikeli doğa.",
+        "prompt": "Volkanik patlama, lav akintisi, dumanlar, tehlikeli doga.",
         "category": "nature",
         "difficulty": "hard",
         "keywords": ["volcano", "lava", "eruption"],
-        "ids": ["1462331940023-8630676882f8", "1518182195610-1845bb08c028", "1631551107579-3d1490231934"]
+        "ai_image": "volcano_eruption.png"
     },
     {
-        "prompt": "Tropikal plajda gün batımı, palmiye ağaçları, altın saat.",
+        "prompt": "Tropikal plajda gun batimi, palmiye agaclari, altin saat.",
         "category": "nature",
         "difficulty": "easy",
         "keywords": ["tropical", "beach", "sunset"],
-        "ids": []
+        "ai_image": "tropical_beach.png"
     },
     {
-        "prompt": "Sibernetik laboratuvar, yüksek teknoloji arayüz, hologram.",
+        "prompt": "Sibernetik laboratuvar, yuksek teknoloji arayuz, hologram.",
         "category": "sci-fi",
         "difficulty": "medium",
         "keywords": ["cybernetic", "lab", "hologram"],
-        "ids": []
+        "ai_image": "cyber_lab.png"
     },
     {
-        "prompt": "Sonbahar ormanında antik yol, dökülen yapraklar.",
+        "prompt": "Sonbahar ormaninda antik yol, dokulen yapraklar.",
         "category": "nature",
         "difficulty": "easy",
         "keywords": ["autumn", "forest", "path"],
-        "ids": []
+        "ai_image": "autumn_forest.png"
     },
     {
-        "prompt": "Kalabalık Tokyo caddesi, insan seli, şehir ışıkları.",
+        "prompt": "Kalabalik Tokyo caddesi, insan seli, sehir isiklari.",
         "category": "landscape",
         "difficulty": "hard",
         "keywords": ["tokyo", "street", "crowd"],
-        "ids": []
+        "ai_image": "tokyo_street.png"
     },
     {
-        "prompt": "Soyut geometrik şekiller, 3D render, renkli.",
+        "prompt": "Soyut geometrik sekiller, 3D render, renkli.",
         "category": "art",
         "difficulty": "hard",
         "keywords": ["abstract", "geometric", "3d"],
-        "ids": []
+        "ai_image": "abstract_3d.png"
     },
     {
-        "prompt": "Klasik kütüphane, eski kitaplar, ahşap merdiven.",
+        "prompt": "Klasik kutuphane, eski kitaplar, ahsap merdiven.",
         "category": "historical",
         "difficulty": "medium",
         "keywords": ["library", "books", "shelf"],
-        "ids": []
+        "ai_image": "classic_library.png"
     },
     {
-        "prompt": "Karlı dağ zirvesi, tırmanıcı, ekstrem spor.",
+        "prompt": "Karli dag zirvesi, tirmanici, ekstrem spor.",
         "category": "sports",
         "difficulty": "hard",
         "keywords": ["mountain", "climber", "snow"],
-        "ids": []
+        "ai_image": "mountain_climber.png"
     },
     {
-        "prompt": "Su altı batığı, balıklar, gizemli.",
+        "prompt": "Su alti batigi, baliklar, gizemli.",
         "category": "nature",
         "difficulty": "medium",
         "keywords": ["shipwreck", "underwater", "ocean"],
-        "ids": []
+        "ai_image": "underwater_shipwreck.png"
     },
     {
-        "prompt": "Fütüristik uçan araba, gökdelenler, bulutlar.",
+        "prompt": "Futuristik ucan araba, gokdelenler, bulutlar.",
         "category": "sci-fi",
         "difficulty": "medium",
         "keywords": ["flying car", "future", "skyline"],
-        "ids": []
+        "ai_image": "flying_car.png"
     },
     {
-        "prompt": "Orta çağ pazar tezgahı, meyveler, tüccar.",
+        "prompt": "Orta cag pazar tezgahi, meyveler, tuccar.",
         "category": "historical",
         "difficulty": "easy",
         "keywords": ["medieval", "market", "fruit"],
-        "ids": []
+        "ai_image": "medieval_market.png"
     }
 ]
 
+
 def seed_advanced(db: Session):
-    print("Starting advanced seed process (Adaptive Mode)...")
-    print("Target: 20 successful scenarios with 3 unique images each.")
+    print("Starting advanced seed process...")
+    print("Target: 20 successful scenarios with 2 unique real images + 1 AI image each.")
+    print(f"Total scenarios available: {len(SCENARIOS)}")
     
     successful_scenarios_count = 0
     total_processed = 0
     
     for i, data in enumerate(SCENARIOS):
         if successful_scenarios_count >= 20:
-            print(f"Goal reached! {successful_scenarios_count} scenarios seeded successfully.")
+            print(f"\nGoal reached! {successful_scenarios_count} scenarios seeded successfully.")
             break
             
-        print(f"[{total_processed+1}/{len(SCENARIOS)}] Processing candidate: {data['prompt']}")
+        print(f"\n[{total_processed+1}/{len(SCENARIOS)}] Processing: {data['prompt'][:50]}...")
         total_processed += 1
         
         # Check if scenario exists
@@ -279,91 +360,134 @@ def seed_advanced(db: Session):
             db.commit()
             db.refresh(scenario)
         
-        # Cleanup existing images for a clean retry
-        existing_images = db.query(Image).filter(Image.scenario_id == scenario.id, Image.is_ai_generated == False).all()
-        for img in existing_images:
-            if img.url.startswith("/static/"):
-                relative_path = img.url.lstrip("/")
-                full_path = os.path.join("app", relative_path)
-                if os.path.exists(full_path):
-                    try:
-                        os.remove(full_path)
-                    except:
-                        pass
-            db.delete(img)
-        db.commit()
-
-        print("  - Attempting to download 3 unique images...")
+        # Check if scenario already has enough real images
+        existing_real_count = db.query(Image).filter(
+            Image.scenario_id == scenario.id, 
+            Image.is_ai_generated == False
+        ).count()
         
-        # Sanitize keywords
-        sanitized_keywords = []
-        for k in data["keywords"]:
-            sanitized_keywords.extend(k.split())
-        base_keywords = ",".join(sanitized_keywords)
+        if existing_real_count >= 2:
+            # Check if already has AI image too
+            existing_ai = db.query(Image).filter(
+                Image.scenario_id == scenario.id, 
+                Image.is_ai_generated == True
+            ).first()
+            
+            if existing_ai:
+                print(f"  [SKIP] Already complete with {existing_real_count} real + AI image")
+                successful_scenarios_count += 1
+                continue
+            else:
+                # Just add AI image
+                if seed_ai_image_for_scenario(db, scenario, data):
+                    print(f"  [OK] Added AI image to existing scenario")
+                    successful_scenarios_count += 1
+                continue
         
-        scenario_hashes = set()
-        count = 0
-        attempts = 0
-        max_attempts = 15 # Increased for better chance
+        # Cleanup existing images for a clean retry ONLY if we are re-downloading
+        # But here we want to check locals first
         
-        current_scenario_images = [] # Track images for this specific scenario attempt
-
-        while count < 3 and attempts < max_attempts:
-             attempts += 1
-             unique_seed = i * 1000 + count * 100 + attempts
-             
-             # Primary Source: LoremFlickr
-             url = f"https://loremflickr.com/800/600/{base_keywords}/all?lock={unique_seed}"
-             filename = f"sc{scenario.id}_img{count+1}_{int(time.time())}_{attempts}.jpg"
-             
-             # Download
-             saved_path = download_image(url, filename)
-             
-             # Fallback Source: Picsum
-             if not saved_path.startswith("/static/"):
-                 print(f"    Fallback to Picsum...")
-                 fallback_url = f"https://picsum.photos/800/600?random={unique_seed}"
-                 saved_path = download_image(fallback_url, filename)
-
-             # Validate Uniqueness
-             if saved_path.startswith("/static/"):
-                 full_path = os.path.join(STATIC_DIR, filename)
-                 try:
-                     with open(full_path, "rb") as f:
-                         content = f.read()
-                         file_hash = hashlib.md5(content).hexdigest()
-                     
-                     if file_hash in scenario_hashes:
-                         print(f"    [!] Duplicate content (Hash: {file_hash[:8]}). Retrying...")
-                         os.remove(full_path)
-                         continue
-                     
-                     scenario_hashes.add(file_hash)
-                 except Exception as e:
-                     print(f"    [!] Hashing error: {e}")
-                     continue # Skip this file if we can't verify it
-             
-                 # Add to DB buffer (not committed yet if we want transactional, but here we commit per image)
-                 # Better: Add to list, commit later? No, we need DB IDs. 
-                 # We will delete them if total count < 3 at the end.
-                 img = Image(
-                     url=saved_path,
+        print("  - Checking for existing local images...")
+        import glob
+        existing_files = glob.glob(os.path.join(STATIC_DIR, f"sc{scenario.id}_*.jpg"))
+        
+        found_local_count = 0
+        current_scenario_images = []
+        
+        # If we have local files, use them
+        if len(existing_files) >= 2:
+            print(f"    Found {len(existing_files)} local images. Registering to DB without download...")
+            for filepath in existing_files[:2]:
+                filename = os.path.basename(filepath)
+                img = Image(
+                     url=f"/static/images/real/{filename}",
                      is_ai_generated=False,
                      category=data["category"],
                      difficulty=data["difficulty"],
                      scenario_id=scenario.id
-                 )
-                 db.add(img)
-                 db.commit() 
-                 current_scenario_images.append(img)
-                 count += 1
-                 time.sleep(0.8)
-
-        if count == 3:
-            print(f"  [OK] Scenario '{data['prompt'][:30]}...' seeded successfully.")
-            successful_scenarios_count += 1
+                )
+                db.add(img)
+                current_scenario_images.append(img)
+                found_local_count += 1
+            db.commit()
+            count = found_local_count
         else:
-            print(f"  [FIX] Failed to get 3 unique images (Got {count}). Rolling back this scenario...")
+            # Need to download
+            print("  - Downloading 2 unique real images...")
+            
+            # Sanitize keywords
+            sanitized_keywords = []
+            for k in data["keywords"]:
+                sanitized_keywords.extend(k.split())
+            base_keywords = ",".join(sanitized_keywords)
+            
+            scenario_hashes = set()
+            count = 0
+            attempts = 0
+            max_attempts = 15
+            
+            while count < 2 and attempts < max_attempts:
+                 attempts += 1
+                 unique_seed = i * 1000 + count * 100 + attempts + int(time.time()*100)
+                 
+                 # Primary Source: LoremFlickr
+                 # Try to force unique images with lock and timestamp
+                 if attempts < 8:
+                     url = f"https://loremflickr.com/800/600/{base_keywords}/all?lock={unique_seed}"
+                 else:
+                     # Fallback to Picsum earlier if LoremFlickr keeps sending duplicates
+                     print(f"    Fallback to Picsum (too many attempts)...")
+                     url = f"https://picsum.photos/800/600?random={unique_seed}"
+
+                 filename = f"sc{scenario.id}_real_{count+1}_{int(time.time())}_{attempts}.jpg"
+                 
+                 # Download
+                 saved_path = download_image(url, filename)
+                 
+                 # Validate Uniqueness
+                 if saved_path.startswith("/static/"):
+                     full_path = os.path.join(STATIC_DIR, filename)
+                     try:
+                         with open(full_path, "rb") as f:
+                             content = f.read()
+                             file_hash = hashlib.md5(content).hexdigest()
+                         
+                         if file_hash in scenario_hashes:
+                             print(f"    [!] Duplicate content (Hash: {file_hash[:8]}). Retrying...")
+                             os.remove(full_path)
+                             continue
+                         
+                         scenario_hashes.add(file_hash)
+                     except Exception as e:
+                         print(f"    [!] Hashing error: {e}")
+                         continue
+                 
+                     img = Image(
+                         url=saved_path,
+                         is_ai_generated=False,
+                         category=data["category"],
+                         difficulty=data["difficulty"],
+                         scenario_id=scenario.id
+                     )
+                     db.add(img)
+                     db.commit() 
+                     current_scenario_images.append(img)
+                     count += 1
+                     time.sleep(1.5) # Increased delay to reduce rate limiting randomness
+
+        if count >= 2:
+            # Successfully got 2 real images, now add AI image
+            print(f"  [OK] Got {count} real images, adding AI image...")
+            ai_success = seed_ai_image_for_scenario(db, scenario, data)
+            
+            if ai_success:
+                print(f"  [OK] Scenario seeded successfully!")
+                successful_scenarios_count += 1
+            else:
+                print(f"  [!] Scenario has real images but AI image failed")
+                successful_scenarios_count += 1
+        else:
+            print(f"  [FAIL] Failed to get 2 unique real images (Got {count}). Rolling back...")
             # Delete images from DB and Disk
             for img in current_scenario_images:
                 if img.url.startswith("/static/"):
@@ -376,10 +500,13 @@ def seed_advanced(db: Session):
             db.delete(scenario)
             db.commit()
 
+    print("\n" + "=" * 60)
     if successful_scenarios_count < 20:
         print(f"WARNING: Only managed to seed {successful_scenarios_count}/20 scenarios.")
     else:
-        print("Advanced seed complete! 20 Scenarios ready.")
+        print(f"Advanced seed complete! {successful_scenarios_count} scenarios ready.")
+    print("=" * 60)
+
 
 def main():
     db = SessionLocal()

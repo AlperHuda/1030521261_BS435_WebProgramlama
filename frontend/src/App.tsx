@@ -70,13 +70,14 @@ export default function App() {
   };
 
   async function handleSaveScore(playerName: string) {
-    if (state.gameMode === 'timed' && state.timeTaken !== null) {
+    // Save score for any mode that supports scoring/leaderboard
+    if (state.score > 0 || state.gameMode === 'timed' || state.gameMode === 'time_attack') {
       try {
         await api.createLeaderboardEntry({
           player_name: playerName,
           score: state.score,
-          time_taken: state.timeTaken,
-          game_mode: state.gameMode,
+          time_taken: state.timeTaken || 0,
+          game_mode: state.gameMode || 'classic',
           category: state.category,
           round_id: state.roundId,
         });
@@ -89,8 +90,13 @@ export default function App() {
   }
 
   function handleResultAction(action: 'play-again' | 'menu' | 'leaderboard') {
-    if (action === 'leaderboard' && state.gameMode === 'timed') {
-      setShowNameModal(true);
+    if (action === 'leaderboard') {
+      const hasLeaderboard = ['timed', 'time_attack', 'marathon'].includes(state.gameMode || '');
+      if (hasLeaderboard) {
+        setShowNameModal(true);
+      } else {
+        goToMenu();
+      }
     } else if (action === 'play-again') {
       startNewRound();
     } else {
@@ -238,7 +244,7 @@ export default function App() {
   if (state.stage === 'play') {
     return (
       <div>
-        {(state.gameMode === 'timed' || state.gameMode === 'time_attack') && state.timeLimit && (
+        {state.timeLimit && state.timeLimit > 0 && (
           <div className="container" style={{ paddingBottom: 0 }}>
             <Timer
               timeLimit={state.timeLimit}
@@ -272,13 +278,13 @@ export default function App() {
             ? state.attemptNumber === 1
               ? 'Mükemmel! İlk denemede doğru buldunuz!'
               : 'Tebrikler! İkinci denemede doğru buldunuz!'
-            : state.gameMode === 'timed' && state.timeTaken === state.timeLimit
+            : (state.timeLimit && state.timeTaken === state.timeLimit)
               ? 'Süre doldu! Maalesef doğru tahmin yapamadınız.'
               : 'Maalesef doğru tahmin yapamadınız.'
         }
         onPlayAgain={() => handleResultAction('play-again')}
         onBackToMenu={() => handleResultAction('menu')}
-        onViewLeaderboard={state.gameMode === 'timed' ? () => handleResultAction('leaderboard') : undefined}
+        onViewLeaderboard={['timed', 'time_attack', 'marathon'].includes(state.gameMode || '') ? () => handleResultAction('leaderboard') : undefined}
         aiImageIndex={state.aiImageIndex}
         attemptNumber={state.attemptNumber}
         timeTaken={state.timeTaken}
