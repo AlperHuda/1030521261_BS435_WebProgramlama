@@ -92,6 +92,7 @@ async def start_game(
 ):
     """Start the game (Host only)"""
     round_data = MultiplayerService.start_game(db, lobby_id, current_user)
+    # Broadcast update
     await manager.broadcast(lobby_id, {
         "type": "GAME_START", 
         "lobby_id": lobby_id,
