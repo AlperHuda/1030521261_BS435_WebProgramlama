@@ -69,6 +69,36 @@ def get_lobby_info(
         raise HTTPException(status_code=404, detail="Lobby not found")
     return status
 
+@router.post("/lobby/{lobby_id}/ready")
+async def toggle_ready(
+    lobby_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Toggle ready status"""
+    is_ready = MultiplayerService.toggle_ready(db, lobby_id, current_user)
+    # Broadcast update
+    await manager.broadcast(lobby_id, {
+        "type": "LOBBY_UPDATE", 
+        "data": MultiplayerService.get_lobby_status(db, lobby_id)
+    })
+    return {"is_ready": is_ready}
+
+@router.post("/lobby/{lobby_id}/start")
+async def start_game(
+    lobby_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Start the game (Host only)"""
+    round_data = MultiplayerService.start_game(db, lobby_id, current_user)
+    await manager.broadcast(lobby_id, {
+        "type": "GAME_START", 
+        "lobby_id": lobby_id,
+        "round": round_data
+    })
+    return {"message": "Game started"}
+
 
 @router.websocket("/ws/{lobby_id}/{user_id}")
 async def websocket_endpoint(
@@ -94,6 +124,47 @@ async def websocket_endpoint(
             
             if data.get("type") == "CHAT":
                  await manager.broadcast(lobby_id, {"type": "CHAT", "user_id": user_id, "message": data.get("message")})
+            
+            elif data.get("type") == "GUESS":
+                result = MultiplayerService.process_guess(db, lobby_id, user_id, data.get("index"))
+                if result:
+                     # Calculate correct index for client revelation (only if round over)
+                     # But for now, just tell connection about their guess correctness
+                     
+                     # 1. Notify everyone about score update
+                     await manager.broadcast(lobby_id, {
+                         "type": "PLAYER_UPDATE",
+                         "user_id": user_id,
+                         "score": result["score_total"]
+                     })
+                     
+                     # 2. If all guessed, end round
+                     if result["all_guessed"]:
+                        # Reveal answer
+                        game_state = MultiplayerService.active_games.get(lobby_id)
+                        correct_index = game_state["round"]["correct_index"]
+                        
+                        await manager.broadcast(lobby_id, {
+                            "type": "ROUND_RESULT",
+                            "correct_index": correct_index,
+                            "scores": MultiplayerService.get_lobby_status(db, lobby_id)["players"]
+                        })
+                        
+                        # Start new round after delay (client handles delay, we send data)
+                        import asyncio
+                        await asyncio.sleep(3) # Wait 3 sec
+                        
+                        new_round = MultiplayerService.start_new_round(db, lobby_id)
+                        if new_round:
+                             await manager.broadcast(lobby_id, {
+                                "type": "NEW_ROUND",
+                                "data": new_round
+                            })
+                        else:
+                             await manager.broadcast(lobby_id, {
+                                "type": "GAME_OVER",
+                                "scores": MultiplayerService.get_lobby_status(db, lobby_id)["players"]
+                             })
             
     except WebSocketDisconnect:
         manager.disconnect(lobby_id, websocket)

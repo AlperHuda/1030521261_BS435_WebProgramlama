@@ -290,6 +290,22 @@ export const api = {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     return handleResponse<LobbyStatus>(response);
+  },
+
+  async toggleReady(token: string, lobbyId: string): Promise<{ is_ready: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/multiplayer/lobby/${lobbyId}/ready`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<{ is_ready: boolean }>(response);
+  },
+
+  async startLobby(token: string, lobbyId: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/multiplayer/lobby/${lobbyId}/start`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    return handleResponse<{ message: string }>(response);
   }
 };
 
@@ -299,6 +315,7 @@ export interface LobbyStatus {
   host_id: number;
   players: LobbyPlayer[];
   player_count: number;
+  round?: any;
 }
 
 export interface LobbyPlayer {

@@ -15,6 +15,7 @@ const ProfileScreen = lazy(() => import('./components/ProfileScreen').then(modul
 const SettingsScreen = lazy(() => import('./components/SettingsScreen').then(module => ({ default: module.SettingsScreen })));
 const AchievementList = lazy(() => import('./components/AchievementList').then(module => ({ default: module.AchievementList })));
 const LobbyScreen = lazy(() => import('./components/LobbyScreen').then(module => ({ default: module.LobbyScreen })));
+const MultiplayerGameScreen = lazy(() => import('./components/MultiplayerGameScreen').then(module => ({ default: module.MultiplayerGameScreen })));
 
 import { ErrorDisplay } from './components/ErrorDisplay';
 import { Timer } from './components/Timer';
@@ -43,6 +44,7 @@ export default function App() {
   const [showRegister, setShowRegister] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showLobby, setShowLobby] = useState(false);
+  const [activeMultiplayerLobby, setActiveMultiplayerLobby] = useState<string | null>(null);
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
 
   // Update user stats after game ends
@@ -192,6 +194,17 @@ export default function App() {
     );
   }
 
+  if (activeMultiplayerLobby) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <MultiplayerGameScreen
+          lobbyId={activeMultiplayerLobby}
+          onBack={() => { setActiveMultiplayerLobby(null); goToMenu(); }}
+        />
+      </Suspense>
+    );
+  }
+
   if (showLobby) {
     return (
       <Suspense fallback={<LoadingScreen />}>
@@ -199,7 +212,8 @@ export default function App() {
           onBack={() => setShowLobby(false)}
           onGameStart={(lobbyId) => {
             console.log("Starting multiplayer game in lobby:", lobbyId);
-            // TODO: Navigate to multiplayer game screen
+            setShowLobby(false);
+            setActiveMultiplayerLobby(lobbyId);
           }}
         />
       </Suspense>

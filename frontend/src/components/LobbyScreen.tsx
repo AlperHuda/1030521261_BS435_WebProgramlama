@@ -42,6 +42,11 @@ export function LobbyScreen({ onBack, onGameStart }: LobbyScreenProps) {
             const message = JSON.parse(event.data);
             if (message.type === 'LOBBY_UPDATE') {
                 setCurrentLobby(message.data);
+                if (message.data.status === 'PLAYING') {
+                    onGameStart(message.data.lobby_id);
+                }
+            } else if (message.type === 'GAME_START') {
+                onGameStart(message.lobby_id);
             }
         };
 
@@ -85,6 +90,29 @@ export function LobbyScreen({ onBack, onGameStart }: LobbyScreenProps) {
         }
     };
 
+    const handleToggleReady = async () => {
+        if (!token || !lobbyId) return;
+        try {
+            await api.toggleReady(token, lobbyId);
+            // WS will update state
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleStartGame = async () => {
+        if (!token || !lobbyId) return;
+        try {
+            await api.startLobby(token, lobbyId);
+            onGameStart(lobbyId);
+        } catch (err) {
+            setError('Failed to start game');
+        }
+    };
+
+    const isHost = currentLobby && user && currentLobby.host_id === user.id;
+    const amIReady = currentLobby?.players.find(p => p.user_id === user?.id)?.is_ready;
+
     if (currentLobby) {
         return (
             <div className="container">
@@ -101,11 +129,30 @@ export function LobbyScreen({ onBack, onGameStart }: LobbyScreenProps) {
                     </ul>
                 </div>
 
-                {/* Chat or other lobby features could go here */}
-
                 <div style={{ display: 'flex', gap: '16px' }}>
                     <button className="button" style={{ backgroundColor: '#dc2626' }} onClick={onBack}>Çıkış</button>
-                    {/* Ready button logic to be added */}
+
+                    {isHost ? (
+                        <button
+                            className="button"
+                            style={{
+                                background: currentLobby.player_count < 2 ? 'gray' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                cursor: currentLobby.player_count < 2 ? 'not-allowed' : 'pointer'
+                            }}
+                            disabled={currentLobby.player_count < 2}
+                            onClick={handleStartGame}
+                        >
+                            Oyunu Başlat ({currentLobby.player_count}/2)
+                        </button>
+                    ) : (
+                        <button
+                            className="button"
+                            style={{ background: amIReady ? '#d97706' : '#2563eb' }}
+                            onClick={handleToggleReady}
+                        >
+                            {amIReady ? 'İptal Et' : 'Hazır Ol'}
+                        </button>
+                    )}
                 </div>
             </div>
         );
