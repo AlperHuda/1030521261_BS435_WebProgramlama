@@ -238,15 +238,30 @@ export default function App() {
   if (state.stage === 'menu') {
     return (
       <MenuScreen
-        onStartGame={goToModeSelect}
-        onViewStats={() => setShowStats(true)}
+        onStartGame={() => { soundService.playClick(); goToModeSelect(); }}
+        onViewStats={() => { soundService.playClick(); setShowStats(true); }}
 
-        // Gated actions: Show always, but check auth on click
-        onViewAchievements={() => isAuthenticated ? setShowAchievements(true) : setShowLogin(true)}
-        onSettings={() => isAuthenticated ? setShowSettings(true) : setShowLogin(true)}
-        onLogin={() => setShowLogin(true)}
-        onProfile={() => isAuthenticated ? setShowProfile(true) : setShowLogin(true)}
-        onMultiplayer={() => isAuthenticated ? setShowLobby(true) : setShowLogin(true)}
+        // Gated actions with sound
+        onViewAchievements={() => {
+          soundService.playClick();
+          isAuthenticated ? setShowAchievements(true) : setShowLogin(true);
+        }}
+        onSettings={() => {
+          soundService.playClick();
+          isAuthenticated ? setShowSettings(true) : setShowLogin(true);
+        }}
+        onLogin={() => {
+          soundService.playClick();
+          setShowLogin(true);
+        }}
+        onProfile={() => {
+          soundService.playClick();
+          isAuthenticated ? setShowProfile(true) : setShowLogin(true);
+        }}
+        onMultiplayer={() => {
+          soundService.playClick();
+          isAuthenticated ? setShowLobby(true) : setShowLogin(true);
+        }}
 
         isAuthenticated={isAuthenticated}
         username={user?.display_name || user?.username}
